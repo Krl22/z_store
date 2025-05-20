@@ -40,13 +40,16 @@ function useGoogleSheet(csvUrl: string) {
 }
 
 export default function Home() {
-  const { activeFilter, searchQuery } = useFilter();
+  const { activeFilter, searchQuery, priceRange } = useFilter();
   const data = useGoogleSheet(
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTUIcUqIZi-QQVPcAPnpGr06n5gCj5r2qTOsWd-D3QGRWlu6aCKBkLIJBJOmbOEQMMQHP_6qzl1Mkir/pub?gid=1806455741&single=true&output=csv"
   );
 
   const filteredProducts = data.filter((producto) => {
-    // Primero aplicar filtro de categoría
+    // Convertir precio a número
+    const precio = parseFloat(producto.precio) || 0;
+
+    // Aplicar filtro de categoría
     let matchesFilter = true;
     if (activeFilter && activeFilter !== "all") {
       if (activeFilter === "promociones") {
@@ -59,19 +62,28 @@ export default function Home() {
       }
     }
 
-    // Luego aplicar búsqueda si existe
-    if (searchQuery && matchesFilter) {
+    // Aplicar filtro de precio
+    let matchesPrice = true;
+    if (priceRange.min !== null) {
+      matchesPrice = precio >= priceRange.min;
+    }
+    if (priceRange.max !== null) {
+      matchesPrice = matchesPrice && precio <= priceRange.max;
+    }
+
+    // Aplicar búsqueda
+    let matchesSearch = true;
+    if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      return (
+      matchesSearch =
         producto.Hongo.toLowerCase().includes(query) ||
         producto.Tipo.toLowerCase().includes(query) ||
         producto.Categoria.toLowerCase().includes(query) ||
         producto.Subcategoria.toLowerCase().includes(query) ||
-        producto.precio.includes(query)
-      );
+        producto.precio.includes(query);
     }
 
-    return matchesFilter;
+    return matchesFilter && matchesPrice && matchesSearch;
   });
 
   return (
