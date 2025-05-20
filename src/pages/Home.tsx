@@ -40,19 +40,38 @@ function useGoogleSheet(csvUrl: string) {
 }
 
 export default function Home() {
-  const { activeFilter } = useFilter();
+  const { activeFilter, searchQuery } = useFilter();
   const data = useGoogleSheet(
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTUIcUqIZi-QQVPcAPnpGr06n5gCj5r2qTOsWd-D3QGRWlu6aCKBkLIJBJOmbOEQMMQHP_6qzl1Mkir/pub?gid=1806455741&single=true&output=csv"
   );
 
   const filteredProducts = data.filter((producto) => {
-    if (!activeFilter || activeFilter === "all") return true;
-    if (activeFilter === "promociones") return producto.promocion === "true";
-    return (
-      producto.Categoria === activeFilter ||
-      producto.Subcategoria === activeFilter ||
-      producto.Tipo === activeFilter
-    );
+    // Primero aplicar filtro de categoría
+    let matchesFilter = true;
+    if (activeFilter && activeFilter !== "all") {
+      if (activeFilter === "promociones") {
+        matchesFilter = producto.promocion === "true";
+      } else {
+        matchesFilter =
+          producto.Categoria === activeFilter ||
+          producto.Subcategoria === activeFilter ||
+          producto.Tipo === activeFilter;
+      }
+    }
+
+    // Luego aplicar búsqueda si existe
+    if (searchQuery && matchesFilter) {
+      const query = searchQuery.toLowerCase();
+      return (
+        producto.Hongo.toLowerCase().includes(query) ||
+        producto.Tipo.toLowerCase().includes(query) ||
+        producto.Categoria.toLowerCase().includes(query) ||
+        producto.Subcategoria.toLowerCase().includes(query) ||
+        producto.precio.includes(query)
+      );
+    }
+
+    return matchesFilter;
   });
 
   return (
