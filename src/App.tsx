@@ -40,7 +40,7 @@ const ConditionalTopNavBar = () => {
 
 const ConditionalBottomNavBar = () => {
   const location = useLocation();
-  const hiddenRoutes = ["/"];
+  const hiddenRoutes = ["/test"];
   return !hiddenRoutes.includes(location.pathname) ? <BottomNavbar /> : null;
 };
 
