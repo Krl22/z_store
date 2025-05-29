@@ -12,6 +12,6 @@ export default defineConfig({
     },
   },
   server: {
-    allowedHosts: ["laundry-soa-pathology-eh.trycloudflare.com"],
+    allowedHosts: ["kodak-jar-tobacco-individually.trycloudflare.com"],
   },
 });

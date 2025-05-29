@@ -8,20 +8,22 @@ import { TopNavbar } from "./components/TopNavbar";
 import { BottomNavbar } from "./components/BottomNavbar";
 import { ThemeProvider } from "./components/theme-provider";
 import Home from "./pages/Home";
+import { CartProvider } from "./components/cart-context";
 
 function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <Router>
-        <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900">
-          <ConditionalTopNavBar />
-
-          <Routes>
-            <Route path="/" element={<Home />} />
-          </Routes>
-          <ConditionalBottomNavBar />
-        </div>
-      </Router>
+      <CartProvider>
+        <Router>
+          <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900">
+            <ConditionalTopNavBar />
+            <Routes>
+              <Route path="/" element={<Home />} />
+            </Routes>
+            <ConditionalBottomNavBar />
+          </div>
+        </Router>
+      </CartProvider>
     </ThemeProvider>
   );
 }

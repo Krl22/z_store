@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useFilter } from "@/components/filter-context";
+import { useCart } from "../components/cart-context";
 
 type Producto = {
   ID: string;
@@ -41,6 +42,8 @@ function useGoogleSheet(csvUrl: string) {
 
 export default function Home() {
   const { activeFilter, searchQuery, priceRange } = useFilter();
+  const { dispatch } = useCart();
+  const [addedItems, setAddedItems] = useState<{[key: string]: boolean}>({});
   const data = useGoogleSheet(
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTUIcUqIZi-QQVPcAPnpGr06n5gCj5r2qTOsWd-D3QGRWlu6aCKBkLIJBJOmbOEQMMQHP_6qzl1Mkir/pub?gid=1806455741&single=true&output=csv"
   );
@@ -86,6 +89,28 @@ export default function Home() {
     return matchesFilter && matchesPrice && matchesSearch;
   });
 
+  const handleAddToCart = (producto: Producto) => {
+    dispatch({
+      type: 'ADD_ITEM',
+      payload: {
+        ID: producto.ID,
+        Hongo: producto.Hongo,
+        precio: producto.precio,
+        image: producto.image,
+        cantidad: 1,
+      },
+    });
+    
+    // Mostrar el check
+    setAddedItems(prev => ({ ...prev, [producto.ID]: true }));
+    
+    // Ocultar el check después de 1 segundo
+    setTimeout(() => {
+      setAddedItems(prev => ({ ...prev, [producto.ID]: false }));
+    }, 1000);
+  };
+
+  // En el return, actualiza el botón:
   return (
     <div className="px-4 py-6 lg:px-8 mt-40 lg:mt-28">
       <h1 className="text-2xl lg:text-3xl font-bold mb-6 text-emerald-800 dark:text-amber-300 font-serif text-center lg:text-left">
@@ -95,12 +120,7 @@ export default function Home() {
       </h1>
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
         {filteredProducts.map((producto) => (
-          <div
-            key={producto.ID}
-            className="border border-amber-100 dark:border-gray-700 rounded-lg p-3 
-                      bg-white dark:bg-gray-800 shadow-sm hover:shadow-md
-                      transition-shadow duration-200 flex flex-col"
-          >
+          <div key={producto.ID} className="border border-amber-100 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col">
             {/* Contenedor 1:1 para la imagen */}
             <div className="relative pb-[100%] mb-3 rounded-md overflow-hidden">
               <img
@@ -127,13 +147,14 @@ export default function Home() {
               <p className="font-bold text-emerald-700 dark:text-amber-400 text-base lg:text-lg">
                 ${producto.precio}
               </p>
-
               <button
-                className="px-2 lg:px-3 py-1 text-xs lg:text-sm bg-amber-400 hover:bg-amber-500 text-emerald-800 
-                             dark:bg-amber-600 dark:hover:bg-amber-700 dark:text-white rounded
-                             transition-colors duration-150 font-medium"
+                className={`px-2 lg:px-3 py-1 text-xs lg:text-sm ${addedItems[producto.ID] 
+                  ? 'bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700' 
+                  : 'bg-amber-400 hover:bg-amber-500 dark:bg-amber-600 dark:hover:bg-amber-700'} 
+                  text-emerald-800 dark:text-white rounded transition-all duration-150 font-medium min-w-[2rem]`}
+                onClick={() => handleAddToCart(producto)}
               >
-                +
+                {addedItems[producto.ID] ? '✓' : '+'}
               </button>
             </div>
           </div>

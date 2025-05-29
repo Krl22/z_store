@@ -32,6 +32,8 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { CartDrawerContent } from "./CartDrawerContent";
+import { CartBadge } from './CartBadge';
 
 export const TopNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -126,31 +128,17 @@ export const TopNavbar = () => {
           <ModeToggle />
           {/* Drawer para el carrito */}
           <Drawer>
-            <DrawerTrigger>
+            <DrawerTrigger asChild>
               <Button
                 variant="ghost"
-                className="flex flex-col items-center gap-1 text-emerald-800 dark:text-gray-300 hover:bg-amber-100 hover:text-emerald-900 dark:hover:bg-gray-700/80 dark:hover:text-amber-100 transition-colors"
+                className="relative flex items-center justify-center h-10 w-10 rounded-full hover:bg-amber-100/50 dark:hover:bg-gray-800 text-amber-300 dark:text-amber-300 transition-colors"
               >
                 <ShoppingCart className="h-5 w-5" />
+                <CartBadge />
               </Button>
             </DrawerTrigger>
             <DrawerContent>
-              <DrawerHeader>
-                <DrawerTitle className="text-2xl text-emerald-800 dark:text-amber-300">
-                  Carrito
-                </DrawerTitle>
-                <DrawerDescription className="text-gray-600 dark:text-gray-400">
-                  Aquí puedes ver los productos en tu carrito.
-                </DrawerDescription>
-              </DrawerHeader>
-              <DrawerFooter>
-                <Button className="bg-amber-400 hover:bg-amber-500 text-emerald-800 dark:bg-amber-600 dark:hover:bg-amber-700 dark:text-white">
-                  Ir al carrito
-                </Button>
-                <DrawerClose asChild>
-                  <Button variant="outline">Cerrar</Button>
-                </DrawerClose>
-              </DrawerFooter>
+              <CartDrawerContent />
             </DrawerContent>
           </Drawer>
 
@@ -159,7 +147,7 @@ export const TopNavbar = () => {
             <DialogTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-10 w-10 p-0 rounded-full sm:h-auto sm:px-4 sm:py-2 hover:bg-amber-100/50 dark:hover:bg-gray-800"
+                className="relative flex items-center justify-center h-10 w-10 rounded-full hover:bg-amber-100/50 dark:hover:bg-gray-800 text-amber-300 dark:text-amber-300 transition-colors"
                 aria-label="Abrir menú de login"
               >
                 <User className="h-5 w-5" />
