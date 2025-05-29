@@ -13,16 +13,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -33,7 +24,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { CartDrawerContent } from "./CartDrawerContent";
-import { CartBadge } from './CartBadge';
+import { CartBadge } from "./CartBadge";
 
 export const TopNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -51,13 +42,8 @@ export const TopNavbar = () => {
     // Implementa tu lógica de formulario
   };
 
-  const {
-    activeFilter,
-    setActiveFilter,
-    setSearchQuery,
-    priceRange,
-    resetFilters,
-  } = useFilter();
+  const { activeFilter, setActiveFilter, setSearchQuery, priceRange } =
+    useFilter();
   const [localSearchQuery, setLocalSearchQuery] = useState("");
 
   useEffect(() => {

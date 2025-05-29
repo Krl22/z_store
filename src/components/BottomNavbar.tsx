@@ -17,12 +17,7 @@ import { CartDrawerContent } from "./CartDrawerContent";
 import { CartBadge } from "./CartBadge";
 
 export const BottomNavbar = () => {
-  const { register, handleSubmit } = useForm();
-
-  const onSubmit = (data: { email: string; password: string }) => {
-    console.log(data);
-    // Aquí puedes manejar el envío del formulario, como hacer una petición a tu API
-  };
+  const { register } = useForm();
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-amber-50 dark:bg-gray-900 border-t border-amber-100 dark:border-gray-700 lg:hidden shadow-[0_-2px_8px_0_rgba(0,0,0,0.04)]">
