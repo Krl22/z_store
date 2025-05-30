@@ -71,6 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         phoneNumber,
         recaptchaVerifier
       );
+      console.log("Verification ID:", verificationId);
       // Manejar la verificación del código aquí
     } catch (error) {
       console.error("Error signing in with phone:", error);
