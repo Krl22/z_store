@@ -138,6 +138,27 @@ body {
   -ms-overflow-style: none; /* Internet Explorer/Edge */
 }
 
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+}
+@keyframes spin-slow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin-slow {
+  animation: spin-slow 15s linear infinite;
+}
+
 /* .image-slider-wrapper.fade img {
   opacity: 0;
   animation: fadeIn 1s forwards;

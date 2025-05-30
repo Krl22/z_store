@@ -122,12 +122,12 @@ export const TopNavbar = () => {
         {/* Logo y Botón Toggle */}
         <div className="flex items-center justify-between w-full md:w-auto">
           <div className="flex items-center gap-2">
-            <img 
-              src="/pwa-512x512.png" 
-              alt="Logo Zeta Dorada" 
+            <img
+              src="/pwa-512x512.png"
+              alt="Logo Zeta Dorada"
               className="h-10 w-10 rounded-full"
             />
-            <div className="text-2xl font-bold text-amber-300 dark:text-amber-300 font-serif">
+            <div className="text-2xl font-bold text-amber-300 dark:text-amber-300 ">
               Zeta Dorada
             </div>
           </div>

@@ -122,7 +122,7 @@ export default function Home() {
 
   return (
     <div className="px-4 py-6 lg:px-8 mt-40 lg:mt-28">
-      <h1 className="text-2xl lg:text-3xl font-bold mb-6 text-emerald-800 dark:text-amber-300 font-serif text-center lg:text-left">
+      <h1 className="text-2xl lg:text-3xl font-bold mb-6 text-emerald-800 dark:text-amber-300  text-center lg:text-left">
         {activeFilter
           ? `Productos: ${activeFilter}`
           : "Todos nuestros productos"}
