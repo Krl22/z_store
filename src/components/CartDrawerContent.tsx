@@ -54,7 +54,7 @@ export const CartDrawerContent = () => {
                     {item.Hongo}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    ${item.precio}
+                    S/{item.precio}
                   </p>
                   <div className="flex items-center gap-2 mt-2">
                     <Button
@@ -93,7 +93,7 @@ export const CartDrawerContent = () => {
         <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-4">
           <div className="flex justify-between text-lg font-semibold">
             <span>Total:</span>
-            <span>${state.total.toFixed(2)}</span>
+            <span>S/{state.total.toFixed(2)}</span>
           </div>
           <Dialog>
             <DialogTrigger asChild>

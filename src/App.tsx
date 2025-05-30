@@ -10,8 +10,15 @@ import { ThemeProvider } from "./components/theme-provider";
 import Home from "./pages/Home";
 import { CartProvider } from "./contexts/cart-context";
 import { AuthProvider } from "./contexts/auth-context";
+import { useEffect } from 'react';
+import { analytics } from './lib/firebase';
+import { logEvent } from 'firebase/analytics';
 
 function App() {
+  useEffect(() => {
+    // Track initial page view
+    logEvent(analytics, 'page_view');
+  }, []);
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <AuthProvider>
