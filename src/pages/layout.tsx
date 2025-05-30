@@ -1,5 +1,5 @@
 // app/layout.tsx
-import { FilterProvider } from "@/components/filter-context";
+import { FilterProvider } from "@/contexts/filter-context";
 
 export default function RootLayout({
   children,

@@ -4,7 +4,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useFilter } from "./filter-context";
+import { useFilter } from "../contexts/filter-context";
 import { X } from "lucide-react";
 import { useState } from "react";
 

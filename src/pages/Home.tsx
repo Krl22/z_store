@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useFilter } from "@/components/filter-context";
-import { useCart } from "../components/cart-context";
+import { useFilter } from "@/contexts/filter-context";
+import { useCart } from "../contexts/cart-context";
 
 type Producto = {
   ID: string;
@@ -43,7 +43,7 @@ function useGoogleSheet(csvUrl: string) {
 export default function Home() {
   const { activeFilter, searchQuery, priceRange } = useFilter();
   const { dispatch } = useCart();
-  const [addedItems, setAddedItems] = useState<{[key: string]: boolean}>({});
+  const [addedItems, setAddedItems] = useState<{ [key: string]: boolean }>({});
   const data = useGoogleSheet(
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTUIcUqIZi-QQVPcAPnpGr06n5gCj5r2qTOsWd-D3QGRWlu6aCKBkLIJBJOmbOEQMMQHP_6qzl1Mkir/pub?gid=1806455741&single=true&output=csv"
   );
@@ -91,7 +91,7 @@ export default function Home() {
 
   const handleAddToCart = (producto: Producto) => {
     dispatch({
-      type: 'ADD_ITEM',
+      type: "ADD_ITEM",
       payload: {
         ID: producto.ID,
         Hongo: producto.Hongo,
@@ -100,13 +100,13 @@ export default function Home() {
         cantidad: 1,
       },
     });
-    
+
     // Mostrar el check
-    setAddedItems(prev => ({ ...prev, [producto.ID]: true }));
-    
+    setAddedItems((prev) => ({ ...prev, [producto.ID]: true }));
+
     // Ocultar el check después de 1 segundo
     setTimeout(() => {
-      setAddedItems(prev => ({ ...prev, [producto.ID]: false }));
+      setAddedItems((prev) => ({ ...prev, [producto.ID]: false }));
     }, 1000);
   };
 
@@ -120,7 +120,10 @@ export default function Home() {
       </h1>
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
         {filteredProducts.map((producto) => (
-          <div key={producto.ID} className="border border-amber-100 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col">
+          <div
+            key={producto.ID}
+            className="border border-amber-100 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col"
+          >
             {/* Contenedor 1:1 para la imagen */}
             <div className="relative pb-[100%] mb-3 rounded-md overflow-hidden">
               <img
@@ -148,13 +151,15 @@ export default function Home() {
                 ${producto.precio}
               </p>
               <button
-                className={`px-2 lg:px-3 py-1 text-xs lg:text-sm ${addedItems[producto.ID] 
-                  ? 'bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700' 
-                  : 'bg-amber-400 hover:bg-amber-500 dark:bg-amber-600 dark:hover:bg-amber-700'} 
+                className={`px-2 lg:px-3 py-1 text-xs lg:text-sm ${
+                  addedItems[producto.ID]
+                    ? "bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+                    : "bg-amber-400 hover:bg-amber-500 dark:bg-amber-600 dark:hover:bg-amber-700"
+                } 
                   text-emerald-800 dark:text-white rounded transition-all duration-150 font-medium min-w-[2rem]`}
                 onClick={() => handleAddToCart(producto)}
               >
-                {addedItems[producto.ID] ? '✓' : '+'}
+                {addedItems[producto.ID] ? "✓" : "+"}
               </button>
             </div>
           </div>
