@@ -42,6 +42,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Heart, LogOut } from "lucide-react";
+import { NotificationSettings } from "./NotificationSettings";
+import { FavoritesBadge } from "./FavoritesBadge";
 
 export const TopNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -197,39 +199,44 @@ export const TopNavbar = () => {
                   <User className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end">
+              <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
+                      {user.displayName || "Usuario"}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
                       {user.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {/* Convertir el item de favoritos en un Drawer trigger */}
+                
+                {/* Configuración de notificaciones */}
+                <div className="p-2">
+                  <NotificationSettings />
+                </div>
+                <DropdownMenuSeparator />
+                
                 <Drawer>
                   <DrawerTrigger asChild>
-                    <DropdownMenuItem
-                      className="cursor-pointer"
-                      onSelect={(e) => e.preventDefault()}
-                    >
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                       <Heart className="mr-2 h-4 w-4" />
-                      <span>Favoritos</span>
+                      Favoritos
+                      <FavoritesBadge />
                     </DropdownMenuItem>
                   </DrawerTrigger>
                   <DrawerContent>
-                    <DrawerHeader className="sr-only">
+                    <DrawerHeader>
                       <DrawerTitle>Favoritos</DrawerTitle>
                     </DrawerHeader>
                     <FavoritesDrawerContent />
                   </DrawerContent>
                 </Drawer>
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={handleLogout}
-                >
+                
+                <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Cerrar sesión</span>
+                  Cerrar sesión
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

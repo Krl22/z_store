@@ -15,27 +15,31 @@ import { analytics } from "./lib/firebase";
 import { logEvent } from "firebase/analytics";
 import { Landing } from "./pages/Landing";
 import { FavoritesProvider } from "./contexts/favorites-context";
+import { NotificationProvider } from "./contexts/notification-context";
 
 function App() {
   useEffect(() => {
     // Track initial page view
     logEvent(analytics, "page_view");
   }, []);
+  
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <AuthProvider>
         <CartProvider>
           <FavoritesProvider>
-            <Router>
-              <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900">
-                <ConditionalTopNavBar />
-                <Routes>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/tienda" element={<Home />} />
-                </Routes>
-                <ConditionalBottomNavBar />
-              </div>
-            </Router>
+            <NotificationProvider>
+              <Router>
+                <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900">
+                  <ConditionalTopNavBar />
+                  <Routes>
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/tienda" element={<Home />} />
+                  </Routes>
+                  <ConditionalBottomNavBar />
+                </div>
+              </Router>
+            </NotificationProvider>
           </FavoritesProvider>
         </CartProvider>
       </AuthProvider>
