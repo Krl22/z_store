@@ -10,10 +10,10 @@ import { Minus, Plus, Trash2, ChevronDown } from "lucide-react";
 import { YapePayment } from "./YapePayment";
 import { Dialog, DialogTrigger } from "./ui/dialog";
 import { useEffect, useState, useRef } from "react";
-import { Wifi, WifiOff, Cloud, CloudOff } from "lucide-react";
+import { Cloud } from "lucide-react";
 
 export const CartDrawerContent = () => {
-  const { state, dispatch, syncCartToFirebase } = useCart();
+  const { state, dispatch } = useCart();
   const [showScrollHint, setShowScrollHint] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);

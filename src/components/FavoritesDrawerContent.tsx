@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { useFavorites } from "../contexts/favorites-context";
 import { useCart } from "../contexts/cart-context";
 import { Trash2, ShoppingCart, Heart, Wifi, WifiOff } from "lucide-react";
