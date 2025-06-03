@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from "react";
 import { db } from "../lib/firebase";
-import { doc, setDoc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, setDoc, onSnapshot } from "firebase/firestore";
 import { useAuth } from "./auth-context";
 
 type FavoriteItem = {
@@ -35,7 +35,10 @@ const FavoritesContext = createContext<{
   isFavorite: (productId: string) => boolean;
 } | null>(null);
 
-const favoritesReducer = (state: FavoritesState, action: FavoritesAction): FavoritesState => {
+const favoritesReducer = (
+  state: FavoritesState,
+  action: FavoritesAction
+): FavoritesState => {
   switch (action.type) {
     case "ADD_FAVORITE": {
       const existingItem = state.items.find(
@@ -123,7 +126,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
 
     dispatch({ type: "SET_LOADING", payload: true });
     const favoritesRef = doc(db, "favorites", user.uid);
-    
+
     const unsubscribe = onSnapshot(
       favoritesRef,
       (doc) => {
@@ -148,14 +151,14 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     // Solo sincronizar si hay cambios reales en los items y no estamos cargando desde Firebase
     if (user && !state.isLoading && !state.isSyncing) {
-    // Usar un timeout para evitar múltiples llamadas rápidas
-    const timeoutId = setTimeout(() => {
-      syncFavoritesToFirebase();
-    }, 500);
+      // Usar un timeout para evitar múltiples llamadas rápidas
+      const timeoutId = setTimeout(() => {
+        syncFavoritesToFirebase();
+      }, 500);
 
-    return () => clearTimeout(timeoutId);
-  }
-}, [state.items, user, state.isLoading, state.isSyncing]);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [state.items, user, state.isLoading, state.isSyncing]);
 
   return (
     <FavoritesContext.Provider
