@@ -184,14 +184,12 @@ export default function Home() {
                   isFavorite(producto.ID)
                     ? "bg-red-500 hover:bg-red-600 text-white"
                     : "bg-white/80 hover:bg-white text-gray-600 hover:text-red-500"
-                } ${
-                  favoritedItems[producto.ID] ? "scale-125" : "scale-100"
-                }`}
+                } ${favoritedItems[producto.ID] ? "scale-125" : "scale-100"}`}
               >
-                <Heart 
+                <Heart
                   className={`h-4 w-4 transition-all duration-200 ${
                     isFavorite(producto.ID) ? "fill-current" : ""
-                  }`} 
+                  }`}
                 />
               </Button>
               {/* Badge de promoción si existe */}
@@ -256,10 +254,10 @@ export default function Home() {
                         : "bg-white/80 hover:bg-white text-gray-600 hover:text-red-500"
                     }`}
                   >
-                    <Heart 
+                    <Heart
                       className={`h-5 w-5 transition-all duration-200 ${
                         isFavorite(selectedProduct.ID) ? "fill-current" : ""
-                      }`} 
+                      }`}
                     />
                   </Button>
                 </div>
@@ -299,7 +297,9 @@ export default function Home() {
                     </p>
                     <div className="flex gap-2">
                       <Button
-                        onClick={(e) => handleAddToFavorites(selectedProduct, e)}
+                        onClick={(e) =>
+                          handleAddToFavorites(selectedProduct, e)
+                        }
                         variant="outline"
                         className={`${
                           isFavorite(selectedProduct.ID)
@@ -307,12 +307,14 @@ export default function Home() {
                             : "hover:bg-gray-50"
                         }`}
                       >
-                        <Heart 
+                        <Heart
                           className={`h-4 w-4 mr-2 ${
                             isFavorite(selectedProduct.ID) ? "fill-current" : ""
-                          }`} 
+                          }`}
                         />
-                        {isFavorite(selectedProduct.ID) ? "En favoritos" : "Favorito"}
+                        {isFavorite(selectedProduct.ID)
+                          ? "En favoritos"
+                          : "Favorito"}
                       </Button>
                       <Button
                         onClick={(e) => {
