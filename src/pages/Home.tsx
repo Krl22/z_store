@@ -8,6 +8,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useFavorites } from "../contexts/favorites-context";
+import { Heart } from "lucide-react";
 
 type Producto = {
   ID: string;
@@ -54,6 +56,37 @@ export default function Home() {
   const [addedItems, setAddedItems] = useState<{ [key: string]: boolean }>({});
   const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { dispatch: favoritesDispatch, isFavorite } = useFavorites();
+  const [favoritedItems, setFavoritedItems] = useState<{
+    [key: string]: boolean;
+  }>({});
+
+  const handleAddToFavorites = (producto: Producto, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (isFavorite(producto.ID)) {
+      favoritesDispatch({ type: "REMOVE_FAVORITE", payload: producto.ID });
+    } else {
+      favoritesDispatch({
+        type: "ADD_FAVORITE",
+        payload: {
+          ID: producto.ID,
+          Hongo: producto.Hongo,
+          precio: producto.precio,
+          image: producto.image,
+          Tipo: producto.Tipo,
+          Categoria: producto.Categoria,
+          descripcion: producto.descripcion,
+          addedAt: Date.now(),
+        },
+      });
+    }
+
+    setFavoritedItems((prev) => ({ ...prev, [producto.ID]: true }));
+    setTimeout(() => {
+      setFavoritedItems((prev) => ({ ...prev, [producto.ID]: false }));
+    }, 500);
+  };
 
   const data = useGoogleSheet(
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTUIcUqIZi-QQVPcAPnpGr06n5gCj5r2qTOsWd-D3QGRWlu6aCKBkLIJBJOmbOEQMMQHP_6qzl1Mkir/pub?gid=1806455741&single=true&output=csv"
@@ -142,6 +175,31 @@ export default function Home() {
                 alt={producto.Hongo}
                 className="absolute w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
+              {/* Botón de favoritos */}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => handleAddToFavorites(producto, e)}
+                className={`absolute top-2 right-2 h-8 w-8 p-0 rounded-full transition-all duration-200 ${
+                  isFavorite(producto.ID)
+                    ? "bg-red-500 hover:bg-red-600 text-white"
+                    : "bg-white/80 hover:bg-white text-gray-600 hover:text-red-500"
+                } ${
+                  favoritedItems[producto.ID] ? "scale-125" : "scale-100"
+                }`}
+              >
+                <Heart 
+                  className={`h-4 w-4 transition-all duration-200 ${
+                    isFavorite(producto.ID) ? "fill-current" : ""
+                  }`} 
+                />
+              </Button>
+              {/* Badge de promoción si existe */}
+              {producto.promocion === "true" && (
+                <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                  Oferta
+                </div>
+              )}
             </div>
 
             {/* Información mínima */}
@@ -169,7 +227,7 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Diálogo del producto */}
+      {/* También puedes agregar el botón de favoritos en el diálogo del producto */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[625px]">
           <DialogHeader>
@@ -187,6 +245,23 @@ export default function Home() {
                     alt={selectedProduct.Hongo}
                     className="absolute w-full h-full object-cover"
                   />
+                  {/* Botón de favoritos en el diálogo */}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(e) => handleAddToFavorites(selectedProduct, e)}
+                    className={`absolute top-2 right-2 h-10 w-10 p-0 rounded-full transition-all duration-200 ${
+                      isFavorite(selectedProduct.ID)
+                        ? "bg-red-500 hover:bg-red-600 text-white"
+                        : "bg-white/80 hover:bg-white text-gray-600 hover:text-red-500"
+                    }`}
+                  >
+                    <Heart 
+                      className={`h-5 w-5 transition-all duration-200 ${
+                        isFavorite(selectedProduct.ID) ? "fill-current" : ""
+                      }`} 
+                    />
+                  </Button>
                 </div>
 
                 <div className="space-y-4">
@@ -222,15 +297,33 @@ export default function Home() {
                     <p className="font-bold text-xl text-emerald-700 dark:text-amber-400">
                       S/{selectedProduct.precio}
                     </p>
-                    <Button
-                      onClick={(e) => {
-                        handleAddToCart(selectedProduct, e);
-                        setIsDialogOpen(false);
-                      }}
-                      className="bg-amber-400 hover:bg-amber-500 dark:bg-amber-600 dark:hover:bg-amber-700 text-emerald-800 dark:text-white"
-                    >
-                      Añadir al carrito
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={(e) => handleAddToFavorites(selectedProduct, e)}
+                        variant="outline"
+                        className={`${
+                          isFavorite(selectedProduct.ID)
+                            ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
+                            : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <Heart 
+                          className={`h-4 w-4 mr-2 ${
+                            isFavorite(selectedProduct.ID) ? "fill-current" : ""
+                          }`} 
+                        />
+                        {isFavorite(selectedProduct.ID) ? "En favoritos" : "Favorito"}
+                      </Button>
+                      <Button
+                        onClick={(e) => {
+                          handleAddToCart(selectedProduct, e);
+                          setIsDialogOpen(false);
+                        }}
+                        className="bg-amber-400 hover:bg-amber-500 dark:bg-amber-600 dark:hover:bg-amber-700 text-emerald-800 dark:text-white"
+                      >
+                        Añadir al carrito
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

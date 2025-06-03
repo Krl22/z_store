@@ -13,7 +13,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTrigger, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -24,7 +24,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { CartDrawerContent } from "./CartDrawerContent";
+import { FavoritesDrawerContent } from "./FavoritesDrawerContent";
 import { CartBadge } from "./CartBadge";
+import { FavoritesBadge } from "./FavoritesBadge";
 import { useAuth } from "../contexts/auth-context";
 import {
   DropdownMenu,
@@ -162,6 +164,26 @@ export const TopNavbar = () => {
         {/* Iconos de usuario y carrito */}
         <div className="hidden md:flex items-center gap-4">
           <ModeToggle />
+          
+          {/* Drawer para favoritos */}
+          <Drawer>
+            <DrawerTrigger asChild>
+              <Button
+                variant="ghost"
+                className="relative flex items-center justify-center h-10 w-10 rounded-full hover:bg-amber-100/50 dark:hover:bg-gray-800 text-amber-300 dark:text-amber-300 transition-colors"
+              >
+                <Heart className="h-5 w-5" />
+                <FavoritesBadge />
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent>
+              <DrawerHeader className="sr-only">
+                <DrawerTitle>Favoritos</DrawerTitle>
+              </DrawerHeader>
+              <FavoritesDrawerContent />
+            </DrawerContent>
+          </Drawer>
+          
           {/* Drawer para el carrito */}
           <Drawer>
             <DrawerTrigger asChild>
@@ -198,10 +220,21 @@ export const TopNavbar = () => {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
-                  <Heart className="mr-2 h-4 w-4" />
-                  <span>Favoritos</span>
-                </DropdownMenuItem>
+                {/* Convertir el item de favoritos en un Drawer trigger */}
+                <Drawer>
+                  <DrawerTrigger asChild>
+                    <DropdownMenuItem className="cursor-pointer" onSelect={(e) => e.preventDefault()}>
+                      <Heart className="mr-2 h-4 w-4" />
+                      <span>Favoritos</span>
+                    </DropdownMenuItem>
+                  </DrawerTrigger>
+                  <DrawerContent>
+                    <DrawerHeader className="sr-only">
+                      <DrawerTitle>Favoritos</DrawerTitle>
+                    </DrawerHeader>
+                    <FavoritesDrawerContent />
+                  </DrawerContent>
+                </Drawer>
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={handleLogout}

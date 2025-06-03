@@ -14,6 +14,7 @@ import { useEffect } from "react";
 import { analytics } from "./lib/firebase";
 import { logEvent } from "firebase/analytics";
 import { Landing } from "./pages/Landing";
+import { FavoritesProvider } from "./contexts/favorites-context";
 
 function App() {
   useEffect(() => {
@@ -24,16 +25,18 @@ function App() {
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <AuthProvider>
         <CartProvider>
-          <Router>
-            <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900">
-              <ConditionalTopNavBar />
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/tienda" element={<Home />} />
-              </Routes>
-              <ConditionalBottomNavBar />
-            </div>
-          </Router>
+          <FavoritesProvider>
+            <Router>
+              <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900">
+                <ConditionalTopNavBar />
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/tienda" element={<Home />} />
+                </Routes>
+                <ConditionalBottomNavBar />
+              </div>
+            </Router>
+          </FavoritesProvider>
         </CartProvider>
       </AuthProvider>
     </ThemeProvider>

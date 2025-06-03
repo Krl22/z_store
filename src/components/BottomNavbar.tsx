@@ -8,7 +8,9 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { CartDrawerContent } from "./CartDrawerContent";
+import { FavoritesDrawerContent } from "./FavoritesDrawerContent";
 import { CartBadge } from "./CartBadge";
+import { FavoritesBadge } from "./FavoritesBadge";
 import { useAuth } from "../contexts/auth-context";
 
 export const BottomNavbar = () => {
@@ -40,12 +42,23 @@ export const BottomNavbar = () => {
           <Home className="h-5 w-5" />
         </Button>
 
-        <Button
-          variant="ghost"
-          className="flex flex-col items-center gap-1 text-emerald-800 dark:text-gray-300 hover:bg-amber-100 hover:text-emerald-900 dark:hover:bg-gray-700/80 dark:hover:text-amber-100 transition-colors"
-        >
-          <Heart className="h-5 w-5" />
-        </Button>
+        <Drawer>
+          <DrawerTrigger asChild>
+            <Button
+              variant="ghost"
+              className="relative flex flex-col items-center gap-1 text-emerald-800 dark:text-gray-300 hover:bg-amber-100 hover:text-emerald-900 dark:hover:bg-gray-700/80 dark:hover:text-amber-100 transition-colors"
+            >
+              <Heart className="h-5 w-5" />
+              <FavoritesBadge />
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent>
+            <DrawerHeader className="sr-only">
+              <DrawerTitle>Favoritos</DrawerTitle>
+            </DrawerHeader>
+            <FavoritesDrawerContent />
+          </DrawerContent>
+        </Drawer>
 
         <Drawer>
           <DrawerTrigger asChild>
@@ -58,41 +71,26 @@ export const BottomNavbar = () => {
             </Button>
           </DrawerTrigger>
           <DrawerContent>
+            <DrawerHeader className="sr-only">
+              <DrawerTitle>Carrito de Compras</DrawerTitle>
+            </DrawerHeader>
             <CartDrawerContent />
           </DrawerContent>
         </Drawer>
 
         {user ? (
-          <Drawer>
-            <DrawerTrigger asChild>
-              <Button
-                variant="ghost"
-                className="flex flex-col items-center gap-1 text-emerald-800 dark:text-gray-300 hover:bg-amber-100 hover:text-emerald-900 dark:hover:bg-gray-700/80 dark:hover:text-amber-100 transition-colors"
-              >
-                <User className="h-5 w-5" />
-              </Button>
-            </DrawerTrigger>
-            <DrawerContent>
-              <DrawerHeader>
-                <DrawerTitle className="text-center">{user.email}</DrawerTitle>
-              </DrawerHeader>
-              <div className="p-4 space-y-4">
-                <Button
-                  variant="outline"
-                  className="w-full flex items-center gap-2 justify-start"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Cerrar sesión</span>
-                </Button>
-              </div>
-            </DrawerContent>
-          </Drawer>
+          <Button
+            variant="ghost"
+            onClick={handleLogout}
+            className="flex flex-col items-center gap-1 text-emerald-800 dark:text-gray-300 hover:bg-amber-100 hover:text-emerald-900 dark:hover:bg-gray-700/80 dark:hover:text-amber-100 transition-colors"
+          >
+            <LogOut className="h-5 w-5" />
+          </Button>
         ) : (
           <Button
             variant="ghost"
-            className="flex flex-col items-center gap-1 text-emerald-800 dark:text-gray-300 hover:bg-amber-100 hover:text-emerald-900 dark:hover:bg-gray-700/80 dark:hover:text-amber-100 transition-colors"
             onClick={handleGoogleLogin}
+            className="flex flex-col items-center gap-1 text-emerald-800 dark:text-gray-300 hover:bg-amber-100 hover:text-emerald-900 dark:hover:bg-gray-700/80 dark:hover:text-amber-100 transition-colors"
           >
             <User className="h-5 w-5" />
           </Button>
