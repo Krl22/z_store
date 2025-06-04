@@ -211,13 +211,13 @@ export const TopNavbar = () => {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                
+
                 {/* Configuración de notificaciones */}
                 <div className="p-2">
                   <NotificationSettings />
                 </div>
                 <DropdownMenuSeparator />
-                
+
                 <Drawer>
                   <DrawerTrigger asChild>
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -233,7 +233,7 @@ export const TopNavbar = () => {
                     <FavoritesDrawerContent />
                   </DrawerContent>
                 </Drawer>
-                
+
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Cerrar sesión

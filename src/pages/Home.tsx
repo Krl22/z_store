@@ -10,6 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useFavorites } from "../contexts/favorites-context";
 import { Heart } from "lucide-react";
+import { analytics } from "../lib/firebase";
+import { logEvent } from "firebase/analytics";
 
 type Producto = {
   ID: string;
@@ -66,6 +68,18 @@ export default function Home() {
 
     if (isFavorite(producto.ID)) {
       favoritesDispatch({ type: "REMOVE_FAVORITE", payload: producto.ID });
+      // 📊 Analytics: Producto removido de favoritos
+      logEvent(analytics, "remove_from_wishlist", {
+        currency: "PEN",
+        value: parseFloat(producto.precio),
+        items: [
+          {
+            item_id: producto.ID,
+            item_name: producto.Hongo,
+            item_category: producto.Categoria,
+          },
+        ],
+      });
     } else {
       favoritesDispatch({
         type: "ADD_FAVORITE",
@@ -79,6 +93,18 @@ export default function Home() {
           descripcion: producto.descripcion,
           addedAt: Date.now(),
         },
+      });
+      // 📊 Analytics: Producto agregado a favoritos
+      logEvent(analytics, "add_to_wishlist", {
+        currency: "PEN",
+        value: parseFloat(producto.precio),
+        items: [
+          {
+            item_id: producto.ID,
+            item_name: producto.Hongo,
+            item_category: producto.Categoria,
+          },
+        ],
       });
     }
 
@@ -142,15 +168,51 @@ export default function Home() {
       },
     });
 
+    // 📊 Analytics: Producto agregado al carrito
+    logEvent(analytics, "add_to_cart", {
+      currency: "PEN",
+      value: parseFloat(producto.precio),
+      items: [
+        {
+          item_id: producto.ID,
+          item_name: producto.Hongo,
+          item_category: producto.Categoria,
+          item_variant: producto.Tipo,
+          price: parseFloat(producto.precio),
+          quantity: 1,
+        },
+      ],
+    });
+
     setAddedItems((prev) => ({ ...prev, [producto.ID]: true }));
     setTimeout(() => {
       setAddedItems((prev) => ({ ...prev, [producto.ID]: false }));
     }, 1000);
   };
+  // Agregar evento cuando ven detalles del producto:
+  const handleProductClick = (producto: Producto) => {
+    setSelectedProduct(producto);
+    setIsDialogOpen(true);
+
+    // 📊 Analytics: Usuario vio detalles del producto
+    logEvent(analytics, "view_item", {
+      currency: "PEN",
+      value: parseFloat(producto.precio),
+      items: [
+        {
+          item_id: producto.ID,
+          item_name: producto.Hongo,
+          item_category: producto.Categoria,
+          item_variant: producto.Tipo,
+        },
+      ],
+    });
+  };
 
   const openProductDialog = (producto: Producto) => {
     setSelectedProduct(producto);
     setIsDialogOpen(true);
+    handleProductClick(producto);
   };
 
   return (
