@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useReducer, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useState,
+} from "react";
 import { db } from "../lib/firebase";
 import { doc, setDoc, onSnapshot } from "firebase/firestore";
 import { useAuth } from "./auth-context";
@@ -93,6 +99,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [state, dispatch] = useReducer(favoritesReducer, initialState);
   const { user } = useAuth();
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Función para sincronizar favoritos con Firebase
   const syncFavoritesToFirebase = async () => {
@@ -117,48 +124,54 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
     return state.items.some((item) => item.ID === productId);
   };
 
-  // Cargar favoritos desde Firebase cuando el usuario se autentica
+  // Load favorites from Firebase with real-time updates
   useEffect(() => {
     if (!user) {
       dispatch({ type: "CLEAR_FAVORITES" });
+      setIsInitialized(false);
       return;
     }
 
     dispatch({ type: "SET_LOADING", payload: true });
     const favoritesRef = doc(db, "favorites", user.uid);
-
+  
     const unsubscribe = onSnapshot(
       favoritesRef,
       (doc) => {
         if (doc.exists()) {
           const data = doc.data();
-          dispatch({ type: "SET_FAVORITES", payload: data.items || [] });
+          // Only update if we're not currently syncing to avoid conflicts
+          if (!state.isSyncing) {
+            dispatch({ type: "SET_FAVORITES", payload: data.items || [] });
+          }
         } else {
-          dispatch({ type: "SET_FAVORITES", payload: [] });
+          if (!state.isSyncing) {
+            dispatch({ type: "SET_FAVORITES", payload: [] });
+          }
         }
         dispatch({ type: "SET_LOADING", payload: false });
+        setIsInitialized(true);
       },
       (error) => {
         console.error("Error loading favorites from Firebase:", error);
         dispatch({ type: "SET_LOADING", payload: false });
+        setIsInitialized(true);
       }
     );
-
+  
     return () => unsubscribe();
-  }, [user]);
-
-  // Sincronizar automáticamente cuando cambian los favoritos
+  }, [user]); // Only depends on user
+  
+  // Sync local changes to Firebase with debounce
   useEffect(() => {
-    // Solo sincronizar si hay cambios reales en los items y no estamos cargando desde Firebase
-    if (user && !state.isLoading && !state.isSyncing) {
-      // Usar un timeout para evitar múltiples llamadas rápidas
+    if (user && isInitialized && !state.isLoading && !state.isSyncing && state.items.length >= 0) {
       const timeoutId = setTimeout(() => {
         syncFavoritesToFirebase();
       }, 500);
-
+  
       return () => clearTimeout(timeoutId);
     }
-  }, [state.items, user, state.isLoading, state.isSyncing]);
+  }, [state.items, user, isInitialized, state.isLoading, state.isSyncing]);
 
   return (
     <FavoritesContext.Provider

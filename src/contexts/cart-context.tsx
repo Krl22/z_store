@@ -1,4 +1,11 @@
-import { createContext, useContext, useReducer, ReactNode, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import { db } from "../lib/firebase";
 import { doc, setDoc, getDoc, onSnapshot } from "firebase/firestore";
 import { useAuth } from "./auth-context";
@@ -115,6 +122,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     isLoading: false,
     isSyncing: false,
   });
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Función para sincronizar el carrito a Firebase
   const syncCartToFirebase = async () => {
@@ -135,89 +143,60 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Función para cargar el carrito desde Firebase
-  const loadCartFromFirebase = async () => {
-    if (!user) return;
-
-    try {
-      dispatch({ type: "SET_LOADING", payload: true });
-      const cartRef = doc(db, "carts", user.uid);
-      const cartSnap = await getDoc(cartRef);
-
-      if (cartSnap.exists()) {
-        const cartData = cartSnap.data();
-        dispatch({
-          type: "SET_CART",
-          payload: {
-            items: cartData.items || [],
-            total: cartData.total || 0,
-          },
-        });
-      } else {
-        // Si no existe carrito en Firebase, crear uno vacío
-        dispatch({ type: "SET_CART", payload: { items: [], total: 0 } });
+  // Load cart from Firebase with real-time updates
+  useEffect(() => {
+    if (!user) {
+      dispatch({ type: "CLEAR_CART" });
+      setIsInitialized(false);
+      return;
+    }
+  
+    dispatch({ type: "SET_LOADING", payload: true });
+    const cartRef = doc(db, "carts", user.uid);
+  
+    const unsubscribe = onSnapshot(
+      cartRef,
+      (doc) => {
+        if (doc.exists()) {
+          const cartData = doc.data();
+          // Only update if we're not currently syncing to avoid conflicts
+          if (!state.isSyncing) {
+            dispatch({
+              type: "SET_CART",
+              payload: {
+                items: cartData.items || [],
+                total: cartData.total || 0,
+              },
+            });
+          }
+        } else {
+          if (!state.isSyncing) {
+            dispatch({ type: "SET_CART", payload: { items: [], total: 0 } });
+          }
+        }
+        dispatch({ type: "SET_LOADING", payload: false });
+        setIsInitialized(true);
+      },
+      (error) => {
+        console.error("Error loading cart from Firebase:", error);
+        dispatch({ type: "SET_LOADING", payload: false });
+        setIsInitialized(true);
       }
-    } catch (error) {
-      console.error("Error loading cart from Firebase:", error);
-      dispatch({ type: "SET_LOADING", payload: false });
-    }
-  };
-
-  // Función para limpiar el carrito local cuando el usuario se desloguea
-  const clearLocalCart = () => {
-    dispatch({ type: "CLEAR_CART" });
-  };
-
-  // Efecto para cargar el carrito cuando el usuario se loguea
+    );
+  
+    return () => unsubscribe();
+  }, [user]); // Only depends on user
+  
+  // Sync local changes to Firebase with debounce
   useEffect(() => {
-    if (user) {
-      loadCartFromFirebase();
-    } else {
-      clearLocalCart();
-    }
-  }, [user]);
-
-  // Efecto para sincronizar automáticamente cuando cambia el carrito
-  useEffect(() => {
-    if (user && !state.isLoading && state.items.length >= 0) {
-      // Debounce la sincronización para evitar demasiadas escrituras
+    if (user && isInitialized && !state.isLoading && !state.isSyncing) {
       const timeoutId = setTimeout(() => {
         syncCartToFirebase();
-      }, 1000); // Espera 1 segundo después del último cambio
-
+      }, 1000);
+  
       return () => clearTimeout(timeoutId);
     }
-  }, [state.items, state.total, user]);
-
-  // Listener en tiempo real para sincronización entre dispositivos
-  useEffect(() => {
-    if (!user) return;
-
-    const cartRef = doc(db, "carts", user.uid);
-    const unsubscribe = onSnapshot(cartRef, (doc) => {
-      if (doc.exists() && !state.isSyncing) {
-        const cartData = doc.data();
-        const firebaseTotal = cartData.total || 0;
-        const firebaseItems = cartData.items || [];
-
-        // Solo actualizar si hay diferencias significativas
-        if (
-          JSON.stringify(firebaseItems) !== JSON.stringify(state.items) ||
-          Math.abs(firebaseTotal - state.total) > 0.01
-        ) {
-          dispatch({
-            type: "SET_CART",
-            payload: {
-              items: firebaseItems,
-              total: firebaseTotal,
-            },
-          });
-        }
-      }
-    });
-
-    return () => unsubscribe();
-  }, [user, state.isSyncing]);
+  }, [state.items, user, isInitialized, state.isLoading, state.isSyncing]); // Removed state.total
 
   return (
     <CartContext.Provider value={{ state, dispatch, syncCartToFirebase }}>

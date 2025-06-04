@@ -10,7 +10,6 @@ import { Minus, Plus, Trash2, ChevronDown } from "lucide-react";
 import { YapePayment } from "./YapePayment";
 import { Dialog, DialogTrigger } from "./ui/dialog";
 import { useEffect, useState, useRef } from "react";
-import { Cloud } from "lucide-react";
 
 export const CartDrawerContent = () => {
   const { state, dispatch } = useCart();
@@ -160,20 +159,6 @@ export const CartDrawerContent = () => {
             <DrawerDescription>
               Aquí puedes revisar los productos que has agregado a tu carrito
             </DrawerDescription>
-          </div>
-          {/* Indicador de sincronización */}
-          <div className="flex items-center gap-2">
-            {state.isSyncing ? (
-              <div className="flex items-center gap-1 text-blue-500">
-                <Cloud className="h-4 w-4 animate-pulse" />
-                <span className="text-xs">Sincronizando...</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 text-green-500">
-                <Cloud className="h-4 w-4" />
-                <span className="text-xs">Sincronizado</span>
-              </div>
-            )}
           </div>
         </div>
       </DrawerHeader>

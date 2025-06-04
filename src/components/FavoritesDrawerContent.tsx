@@ -63,23 +63,6 @@ export const FavoritesDrawerContent = () => {
         </div>
 
         {/* Sync Status */}
-        <div className="flex items-center gap-2">
-          {state.isSyncing ? (
-            <WifiOff className="h-4 w-4 text-orange-500 animate-pulse" />
-          ) : (
-            <Wifi className="h-4 w-4 text-green-500" />
-          )}
-          {state.items.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearFavorites}
-              className="text-red-600 hover:text-red-700"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
       </div>
 
       {/* Content */}

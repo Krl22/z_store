@@ -5,7 +5,6 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -13,6 +12,6 @@ export default defineConfig({
     },
   },
   server: {
-    allowedHosts: ["kodak-jar-tobacco-individually.trycloudflare.com"],
+    allowedHosts: ["worldwide-yacht-reforms-tft.trycloudflare.com"],
   },
 });
