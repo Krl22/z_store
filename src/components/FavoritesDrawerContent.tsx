@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useFavorites } from "../contexts/favorites-context";
 import { useCart } from "../contexts/cart-context";
-import { Trash2, ShoppingCart, Heart, Wifi, WifiOff } from "lucide-react";
+import { Trash2, ShoppingCart, Heart } from "lucide-react";
 import { useState } from "react";
 
 export const FavoritesDrawerContent = () => {
@@ -63,6 +63,18 @@ export const FavoritesDrawerContent = () => {
         </div>
 
         {/* Sync Status */}
+        <div className="flex items-center gap-2">
+          {state.items.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearFavorites}
+              className="text-red-600 hover:text-red-700"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Content */}

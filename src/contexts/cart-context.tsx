@@ -7,7 +7,7 @@ import React, {
   ReactNode,
 } from "react";
 import { db } from "../lib/firebase";
-import { doc, setDoc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, setDoc, onSnapshot } from "firebase/firestore";
 import { useAuth } from "./auth-context";
 
 type CartItem = {
@@ -150,10 +150,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       setIsInitialized(false);
       return;
     }
-  
+
     dispatch({ type: "SET_LOADING", payload: true });
     const cartRef = doc(db, "carts", user.uid);
-  
+
     const unsubscribe = onSnapshot(
       cartRef,
       (doc) => {
@@ -183,17 +183,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         setIsInitialized(true);
       }
     );
-  
+
     return () => unsubscribe();
   }, [user]); // Only depends on user
-  
+
   // Sync local changes to Firebase with debounce
   useEffect(() => {
     if (user && isInitialized && !state.isLoading && !state.isSyncing) {
       const timeoutId = setTimeout(() => {
         syncCartToFirebase();
       }, 1000);
-  
+
       return () => clearTimeout(timeoutId);
     }
   }, [state.items, user, isInitialized, state.isLoading, state.isSyncing]); // Removed state.total
