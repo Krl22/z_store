@@ -12,11 +12,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Download, X, Smartphone, Zap, Wifi } from "lucide-react";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
   readonly userChoice: Promise<{
-    outcome: 'accepted' | 'dismissed';
+    outcome: "accepted" | "dismissed";
     platform: string;
   }>;
   prompt(): Promise<void>;
@@ -24,23 +25,25 @@ interface BeforeInstallPromptEvent extends Event {
 
 export const Landing = () => {
   const navigate = useNavigate();
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [isInstallable, setIsInstallable] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     // Verificar si ya se mostró el prompt antes
-    const hasSeenInstallPrompt = localStorage.getItem('hasSeenInstallPrompt');
-    
+    const hasSeenInstallPrompt = localStorage.getItem("hasSeenInstallPrompt");
+
     // Listener para el evento beforeinstallprompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       const beforeInstallPromptEvent = e as BeforeInstallPromptEvent;
       setDeferredPrompt(beforeInstallPromptEvent);
       setIsInstallable(true);
-      
+
       // Mostrar el prompt solo si no se ha visto antes
-      if (!hasSeenInstallPrompt) {
+      if (!hasSeenInstallPrompt && isMobile) {
         setTimeout(() => {
           setShowInstallPrompt(true);
         }, 3000); // Mostrar después de 3 segundos
@@ -48,15 +51,20 @@ export const Landing = () => {
     };
 
     // Verificar si ya está instalada
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isStandalone = window.matchMedia(
+      "(display-mode: standalone)"
+    ).matches;
     const isInWebAppiOS = (window.navigator as any).standalone === true;
-    
+
     if (!isStandalone && !isInWebAppiOS) {
-      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     }
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt
+      );
     };
   }, []);
 
@@ -65,21 +73,21 @@ export const Landing = () => {
 
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('Usuario aceptó la instalación');
+
+    if (outcome === "accepted") {
+      console.log("Usuario aceptó la instalación");
     } else {
-      console.log('Usuario rechazó la instalación');
+      console.log("Usuario rechazó la instalación");
     }
-    
+
     setDeferredPrompt(null);
     setShowInstallPrompt(false);
-    localStorage.setItem('hasSeenInstallPrompt', 'true');
+    localStorage.setItem("hasSeenInstallPrompt", "true");
   };
 
   const handleDismissInstall = () => {
     setShowInstallPrompt(false);
-    localStorage.setItem('hasSeenInstallPrompt', 'true');
+    localStorage.setItem("hasSeenInstallPrompt", "true");
   };
 
   return (
@@ -105,7 +113,7 @@ export const Landing = () => {
               Obtén la mejor experiencia instalando nuestra aplicación
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div className="flex flex-col items-center space-y-2">
@@ -127,7 +135,7 @@ export const Landing = () => {
                 <span className="text-sm text-white/80">Sin conexión</span>
               </div>
             </div>
-            
+
             <div className="space-y-3">
               <Button
                 onClick={handleInstallClick}
@@ -137,7 +145,7 @@ export const Landing = () => {
                 <Download className="h-5 w-5 mr-2" />
                 Instalar App
               </Button>
-              
+
               <Button
                 variant="outline"
                 onClick={handleDismissInstall}
@@ -146,7 +154,7 @@ export const Landing = () => {
                 Ahora no
               </Button>
             </div>
-            
+
             <p className="text-xs text-white/60 text-center">
               Podrás instalar la app más tarde desde el menú de tu navegador
             </p>
@@ -306,43 +314,50 @@ export const Landing = () => {
                 ¡Lleva la Magia Contigo!
               </h2>
               <p className="text-lg text-white/80 mb-6 max-w-2xl mx-auto">
-                Instala nuestra aplicación y disfruta de una experiencia más rápida, 
-                acceso sin conexión y notificaciones de nuevos productos.
+                Instala nuestra aplicación y disfruta de una experiencia más
+                rápida, acceso sin conexión y notificaciones de nuevos
+                productos.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="flex flex-col items-center space-y-3">
                 <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center">
                   <Zap className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-white">Súper Rápida</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  Súper Rápida
+                </h3>
                 <p className="text-sm text-white/70 text-center">
                   Carga instantánea y navegación fluida
                 </p>
               </div>
-              
+
               <div className="flex flex-col items-center space-y-3">
                 <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
                   <Smartphone className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-white">Experiencia Nativa</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  Experiencia Nativa
+                </h3>
                 <p className="text-sm text-white/70 text-center">
                   Como una app real en tu dispositivo
                 </p>
               </div>
-              
+
               <div className="flex flex-col items-center space-y-3">
                 <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
                   <Wifi className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-white">Funciona Sin Internet</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  Funciona Sin Internet
+                </h3>
                 <p className="text-sm text-white/70 text-center">
                   Accede a tu contenido favorito offline
                 </p>
               </div>
             </div>
-            
+
             {isInstallable && deferredPrompt ? (
               <Button
                 onClick={handleInstallClick}
@@ -354,9 +369,10 @@ export const Landing = () => {
             ) : (
               <div className="space-y-4">
                 <p className="text-white/60 text-sm">
-                  {window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone
-                    ? '¡App ya instalada! Gracias por usar nuestra aplicación.'
-                    : 'Para instalar la app, usa el menú de tu navegador o espera la notificación automática.'}
+                  {window.matchMedia("(display-mode: standalone)").matches ||
+                  (window.navigator as any).standalone
+                    ? "¡App ya instalada! Gracias por usar nuestra aplicación."
+                    : "Para instalar la app, usa el menú de tu navegador o espera la notificación automática."}
                 </p>
                 <Button
                   onClick={() => navigate("/tienda")}
