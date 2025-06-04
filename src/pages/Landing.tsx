@@ -2,12 +2,158 @@ import { useNavigate } from "react-router-dom";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Download, X, Smartphone, Zap, Wifi } from "lucide-react";
+
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed';
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
+}
 
 export const Landing = () => {
   const navigate = useNavigate();
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    // Verificar si ya se mostró el prompt antes
+    const hasSeenInstallPrompt = localStorage.getItem('hasSeenInstallPrompt');
+    
+    // Listener para el evento beforeinstallprompt
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      const beforeInstallPromptEvent = e as BeforeInstallPromptEvent;
+      setDeferredPrompt(beforeInstallPromptEvent);
+      setIsInstallable(true);
+      
+      // Mostrar el prompt solo si no se ha visto antes
+      if (!hasSeenInstallPrompt) {
+        setTimeout(() => {
+          setShowInstallPrompt(true);
+        }, 3000); // Mostrar después de 3 segundos
+      }
+    };
+
+    // Verificar si ya está instalada
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isInWebAppiOS = (window.navigator as any).standalone === true;
+    
+    if (!isStandalone && !isInWebAppiOS) {
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      console.log('Usuario aceptó la instalación');
+    } else {
+      console.log('Usuario rechazó la instalación');
+    }
+    
+    setDeferredPrompt(null);
+    setShowInstallPrompt(false);
+    localStorage.setItem('hasSeenInstallPrompt', 'true');
+  };
+
+  const handleDismissInstall = () => {
+    setShowInstallPrompt(false);
+    localStorage.setItem('hasSeenInstallPrompt', 'true');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 via-indigo-800 to-blue-900 text-white overflow-x-hidden">
+      {/* PWA Install Dialog */}
+      <Dialog open={showInstallPrompt} onOpenChange={setShowInstallPrompt}>
+        <DialogContent className="sm:max-w-md bg-gradient-to-br from-purple-900/95 to-indigo-900/95 border-purple-500/50 text-white">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">
+                ¡Instala nuestra App!
+              </DialogTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDismissInstall}
+                className="text-white/70 hover:text-white hover:bg-white/10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <DialogDescription className="text-white/80">
+              Obtén la mejor experiencia instalando nuestra aplicación
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="flex flex-col items-center space-y-2">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+                  <Zap className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-sm text-white/80">Más rápida</span>
+              </div>
+              <div className="flex flex-col items-center space-y-2">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
+                  <Smartphone className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-sm text-white/80">Nativa</span>
+              </div>
+              <div className="flex flex-col items-center space-y-2">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
+                  <Wifi className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-sm text-white/80">Sin conexión</span>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <Button
+                onClick={handleInstallClick}
+                className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105"
+                disabled={!deferredPrompt}
+              >
+                <Download className="h-5 w-5 mr-2" />
+                Instalar App
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={handleDismissInstall}
+                className="w-full border-white/30 text-white/80 hover:bg-white/10 hover:text-white"
+              >
+                Ahora no
+              </Button>
+            </div>
+            
+            <p className="text-xs text-white/60 text-center">
+              Podrás instalar la app más tarde desde el menú de tu navegador
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Hero Section */}
       <section className="relative h-screen w-full overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/70 z-10"></div>
@@ -93,7 +239,6 @@ export const Landing = () => {
                 <div className="bg-white/10 rounded-xl p-4 h-72 flex items-center justify-center transition-all duration-300 hover:bg-white/20 hover:shadow-lg">
                   <img
                     src={`${item}`}
-                    // src={`/Productos_Images/${item}.jpg`}
                     alt={`Hongos mágicos ${item}`}
                     className="max-h-full max-w-full object-contain transition-transform duration-500 hover:scale-110"
                   />
@@ -146,6 +291,83 @@ export const Landing = () => {
               </button>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* PWA Install Section */}
+      <section className="py-16 px-4 sm:px-6 bg-gradient-to-r from-purple-900/50 to-indigo-900/50">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 hover:border-purple-400 transition-all duration-300">
+            <div className="mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Smartphone className="h-10 w-10 text-white" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">
+                ¡Lleva la Magia Contigo!
+              </h2>
+              <p className="text-lg text-white/80 mb-6 max-w-2xl mx-auto">
+                Instala nuestra aplicación y disfruta de una experiencia más rápida, 
+                acceso sin conexión y notificaciones de nuevos productos.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="flex flex-col items-center space-y-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+                  <Zap className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Súper Rápida</h3>
+                <p className="text-sm text-white/70 text-center">
+                  Carga instantánea y navegación fluida
+                </p>
+              </div>
+              
+              <div className="flex flex-col items-center space-y-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
+                  <Smartphone className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Experiencia Nativa</h3>
+                <p className="text-sm text-white/70 text-center">
+                  Como una app real en tu dispositivo
+                </p>
+              </div>
+              
+              <div className="flex flex-col items-center space-y-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
+                  <Wifi className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Funciona Sin Internet</h3>
+                <p className="text-sm text-white/70 text-center">
+                  Accede a tu contenido favorito offline
+                </p>
+              </div>
+            </div>
+            
+            {isInstallable && deferredPrompt ? (
+              <Button
+                onClick={handleInstallClick}
+                className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              >
+                <Download className="h-6 w-6 mr-3" />
+                Instalar App Ahora
+              </Button>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-white/60 text-sm">
+                  {window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone
+                    ? '¡App ya instalada! Gracias por usar nuestra aplicación.'
+                    : 'Para instalar la app, usa el menú de tu navegador o espera la notificación automática.'}
+                </p>
+                <Button
+                  onClick={() => navigate("/tienda")}
+                  variant="outline"
+                  className="border-white/30 text-white hover:bg-white/10 hover:text-white py-3 px-6 rounded-full"
+                >
+                  Ir a la Tienda
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </section>
     </div>
