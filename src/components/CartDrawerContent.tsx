@@ -8,8 +8,11 @@ import {
 } from "./ui/drawer";
 import { Minus, Plus, Trash2, ChevronDown } from "lucide-react";
 import { YapePayment } from "./YapePayment";
-import { Dialog, DialogTrigger } from "./ui/dialog";
+import { Dialog } from "./ui/dialog";
 import { useEffect, useState, useRef } from "react";
+import { ProfileDialog } from "./ProfileDialog";
+import { useAuth } from "../contexts/auth-context";
+import { userProfileService } from "../services/userProfileService";
 
 export const CartDrawerContent = () => {
   const { state, dispatch } = useCart();
@@ -20,6 +23,65 @@ export const CartDrawerContent = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const autoScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const { user } = useAuth();
+
+  const [canMakePurchase, setCanMakePurchase] = useState(true);
+
+  const handleProceedToPayment = async () => {
+    if (!user) {
+      return;
+    }
+
+    try {
+      const profile = await userProfileService.getUserProfile(user.uid);
+      const canPurchase = userProfileService.canMakePurchase(profile);
+      setCanMakePurchase(canPurchase);
+
+      if (!canPurchase) {
+        setShowProfileDialog(true);
+      } else {
+        setShowPaymentDialog(true);
+      }
+    } catch (error) {
+      console.error("Error al verificar perfil:", error);
+    }
+  };
+
+  useEffect(() => {
+    const checkUserProfile = async () => {
+      if (user) {
+        try {
+          const profile = await userProfileService.getUserProfile(user.uid);
+          setCanMakePurchase(userProfileService.canMakePurchase(profile));
+        } catch (error) {
+          console.error("Error al verificar perfil:", error);
+          setCanMakePurchase(false);
+        }
+      }
+    };
+
+    checkUserProfile();
+  }, [user]);
+
+  useEffect(() => {
+    const checkUserProfile = async () => {
+      if (user && !showProfileDialog) {
+        try {
+          const profile = await userProfileService.getUserProfile(user.uid);
+          setCanMakePurchase(userProfileService.canMakePurchase(profile));
+        } catch (error) {
+          console.error("Error al verificar perfil:", error);
+          setCanMakePurchase(false);
+        }
+      }
+    };
+
+    if (!showProfileDialog && user) {
+      checkUserProfile();
+    }
+  }, [showProfileDialog, user]);
 
   const updateQuantity = (ID: string, newQuantity: number) => {
     if (newQuantity < 1) {
@@ -255,14 +317,29 @@ export const CartDrawerContent = () => {
             <span>S/{state.total.toFixed(2)}</span>
           </div>
           <div className="space-y-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="w-full bg-amber-400 hover:bg-amber-500 text-emerald-800 dark:bg-amber-600 dark:hover:bg-amber-700 dark:text-white h-10">
-                  Proceder al pago
-                </Button>
-              </DialogTrigger>
+            <Button
+              className="w-full bg-amber-400 hover:bg-amber-500 text-emerald-800 dark:bg-amber-600 dark:hover:bg-amber-700 dark:text-white h-10"
+              onClick={handleProceedToPayment}
+            >
+              {!user
+                ? "Iniciar sesión para comprar"
+                : !canMakePurchase
+                ? "Completar perfil para comprar"
+                : "Proceder al pago"}
+            </Button>
+
+            <Dialog
+              open={showPaymentDialog}
+              onOpenChange={setShowPaymentDialog}
+            >
               <YapePayment />
             </Dialog>
+
+            <ProfileDialog
+              open={showProfileDialog}
+              onOpenChange={setShowProfileDialog}
+            />
+
             <DrawerClose asChild>
               <Button variant="outline" className="w-full h-9">
                 Seguir comprando

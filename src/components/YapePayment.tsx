@@ -1,4 +1,10 @@
 import { useCart } from "../contexts/cart-context";
+import { useAuth } from "../contexts/auth-context";
+import {
+  addSaleToSheet,
+  generateSaleId,
+  getClientsFromSheet,
+} from "../services/googleSheetsService";
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { Copy, Check } from "lucide-react";
@@ -13,12 +19,12 @@ export const YapePayment = () => {
   const { state } = useCart();
   const yapeNumber = "901997567";
   const [copied, setCopied] = useState(false);
+  const { user } = useAuth();
 
   const handleCopyNumber = async () => {
     try {
       await navigator.clipboard.writeText(yapeNumber);
       setCopied(true);
-      // Resetear el estado después de 2 segundos
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error("Error al copiar el número:", error);
@@ -40,17 +46,49 @@ export const YapePayment = () => {
   };
 
   // Función para abrir WhatsApp
-  const openWhatsApp = () => {
+  const openWhatsApp = async () => {
+    await handlePaymentConfirmation(); // Cambiar aquí
     const message = encodeURIComponent(generateMessage());
-    const whatsappNumber = "51901997567"; // Reemplazar con tu número
+    const whatsappNumber = "51901997567";
     window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
   };
 
-  // Función para abrir Facebook Messenger
-  const openMessenger = () => {
+  const openMessenger = async () => {
+    await handlePaymentConfirmation(); // Cambiar aquí
     const message = encodeURIComponent(generateMessage());
-    const pageId = "100090226974534"; // Reemplazar con el ID de tu página de Facebook
+    const pageId = "100090226974534";
     window.open(`https://m.me/${pageId}?text=${message}`, "_blank");
+  };
+
+  const handlePaymentConfirmation = async () => {
+    if (!user) return;
+
+    try {
+      // Obtener el ID de 8 dígitos del cliente desde Google Sheets
+      const clients = await getClientsFromSheet();
+      const clientData = clients.find(
+        (client: any) => client.firebase_uid === user.uid
+      );
+      const clientId = clientData ? clientData.ID : user.uid; // Fallback al firebase_uid si no se encuentra
+
+      const saleId = generateSaleId();
+
+      for (const item of state.items) {
+        await addSaleToSheet({
+          id: saleId,
+          cliente: clientId, // Usar el ID de 8 dígitos
+          producto: item.ID, // Usar el código del producto en lugar de item.Hongo
+          cantidad: item.cantidad,
+          unidad: "unidad",
+          precio: Number(item.precio),
+          total: Number(item.precio) * item.cantidad,
+          fecha: new Date().toISOString().split("T")[0],
+          estado: "Pendiente",
+        });
+      }
+    } catch (error) {
+      console.error("Error al procesar el pago:", error);
+    }
   };
 
   return (
@@ -64,7 +102,7 @@ export const YapePayment = () => {
 
       <div className="flex flex-col items-center space-y-4 py-4">
         <img
-          src="/pwa-512x512.png" // Reemplazar con la ruta de tu QR
+          src="/pwa-512x512.png"
           alt="Código QR de Yape"
           className="w-48 h-48 object-contain"
         />

@@ -17,12 +17,20 @@ import { FavoritesBadge } from "./FavoritesBadge";
 import { useAuth } from "../contexts/auth-context";
 import { NotificationSettings } from "./NotificationSettings";
 import { useState } from "react";
+import { ProfileDialog } from "./ProfileDialog";
 
 export const BottomNavbar = () => {
-  const { user, signInWithGoogle, signInWithFacebook, signInWithEmail, logout } = useAuth();
+  const {
+    user,
+    signInWithGoogle,
+    signInWithFacebook,
+    signInWithEmail,
+    logout,
+  } = useAuth();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
 
   const handleGoogleLogin = async () => {
     try {
@@ -85,6 +93,9 @@ export const BottomNavbar = () => {
           <DrawerContent>
             <DrawerHeader>
               <DrawerTitle>Favoritos</DrawerTitle>
+              <DrawerDescription>
+                Gestiona tus productos favoritos
+              </DrawerDescription>
             </DrawerHeader>
             <FavoritesDrawerContent />
           </DrawerContent>
@@ -127,6 +138,9 @@ export const BottomNavbar = () => {
                     </p>
                   </div>
                 </DrawerTitle>
+                <DrawerDescription className="text-center text-sm text-muted-foreground">
+                  Gestiona tu perfil y configuraciones
+                </DrawerDescription>
               </DrawerHeader>
               <div className="p-4 space-y-4">
                 {/* Configuración de notificaciones */}
@@ -134,7 +148,15 @@ export const BottomNavbar = () => {
                   <h3 className="text-sm font-medium mb-2">Notificaciones</h3>
                   <NotificationSettings />
                 </div>
-                
+                {/* Botón para abrir el perfil */}
+                <Button
+                  variant="outline"
+                  className="w-full flex items-center gap-2 justify-start"
+                  onClick={() => setShowProfileDialog(true)}
+                >
+                  <User className="h-4 w-4" />
+                  <span>Mi Perfil</span>
+                </Button>
                 <Button
                   variant="outline"
                   className="w-full flex items-center gap-2 justify-start"
@@ -199,7 +221,7 @@ export const BottomNavbar = () => {
                     Continuar con Google
                   </span>
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   onClick={handleFacebookLogin}
@@ -232,7 +254,10 @@ export const BottomNavbar = () => {
                 {/* Formulario tradicional */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email-bottom" className="text-sm font-medium">
+                    <Label
+                      htmlFor="email-bottom"
+                      className="text-sm font-medium"
+                    >
                       Correo electrónico
                     </Label>
                     <Input
@@ -278,6 +303,10 @@ export const BottomNavbar = () => {
           </Drawer>
         )}
       </div>
+      <ProfileDialog
+        open={showProfileDialog}
+        onOpenChange={setShowProfileDialog}
+      />
     </div>
   );
 };

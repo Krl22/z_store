@@ -44,6 +44,7 @@ import {
 import { Heart, LogOut } from "lucide-react";
 import { NotificationSettings } from "./NotificationSettings";
 import { FavoritesBadge } from "./FavoritesBadge";
+import { ProfileDialog } from "./ProfileDialog";
 
 export const TopNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -56,6 +57,7 @@ export const TopNavbar = () => {
   } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
 
   const handleGoogleLogin = async () => {
     try {
@@ -217,7 +219,10 @@ export const TopNavbar = () => {
                   <NotificationSettings />
                 </div>
                 <DropdownMenuSeparator />
-
+                <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
+                  <User className="mr-2 h-4 w-4" />
+                  Mi Perfil
+                </DropdownMenuItem>
                 <Drawer>
                   <DrawerTrigger asChild>
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -434,6 +439,10 @@ export const TopNavbar = () => {
           </Popover>
         </div>
       </div>
+      <ProfileDialog
+        open={showProfileDialog}
+        onOpenChange={setShowProfileDialog}
+      />
     </div>
   );
 };
