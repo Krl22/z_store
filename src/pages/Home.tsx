@@ -127,9 +127,9 @@ export default function Home() {
         matchesFilter = producto.promocion === "true";
       } else {
         matchesFilter =
-          producto.Categoria === activeFilter ||
-          producto.Subcategoria === activeFilter ||
-          producto.Tipo === activeFilter;
+          producto.Categoria?.toLowerCase() === activeFilter.toLowerCase() ||
+          producto.Subcategoria?.toLowerCase() === activeFilter.toLowerCase() ||
+          producto.Tipo?.toLowerCase() === activeFilter.toLowerCase();
       }
     }
 

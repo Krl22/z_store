@@ -121,6 +121,9 @@ export const TopNavbar = () => {
     { id: "Cultivo", name: "Cultivos" },
     { id: "Grano", name: "Granos" },
     { id: "Kits", name: "Kits" },
+    { id: "cubensis", name: "Cubensis" },
+    { id: "medicinal", name: "Medicinal" },
+    { id: "comestible", name: "Comestible" },
   ];
 
   // Verificar si hay un filtro de precio activo

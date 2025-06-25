@@ -2,6 +2,8 @@
 "use client";
 
 import { createContext, useContext, useState } from "react";
+import { analytics } from "../lib/firebase";
+import { logEvent } from "firebase/analytics";
 
 type PriceRange = {
   min: number | null;
@@ -29,17 +31,66 @@ const FilterContext = createContext<FilterContextType>({
 });
 
 export function FilterProvider({ children }: { children: React.ReactNode }) {
-  const [activeFilter, setActiveFilter] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [priceRange, setPriceRange] = useState<PriceRange>({
+  const [activeFilter, setActiveFilterState] = useState("");
+  const [searchQuery, setSearchQueryState] = useState("");
+  const [priceRange, setPriceRangeState] = useState<PriceRange>({
     min: null,
     max: null,
   });
 
+  // 📊 Analytics: Wrapper para setActiveFilter
+  const setActiveFilter = (filter: string) => {
+    setActiveFilterState(filter);
+    
+    // Log del evento de filtro aplicado
+    logEvent(analytics, "filter_applied", {
+      filter_type: "category",
+      filter_value: filter,
+      previous_filter: activeFilter
+    });
+  };
+
+  // 📊 Analytics: Wrapper para setSearchQuery
+  const setSearchQuery = (query: string) => {
+    setSearchQueryState(query);
+    
+    // Log del evento de búsqueda
+    if (query.trim()) {
+      logEvent(analytics, "search", {
+        search_term: query,
+        search_type: "product_search"
+      });
+    }
+  };
+
+  // 📊 Analytics: Wrapper para setPriceRange
+  const setPriceRange = (range: PriceRange) => {
+    setPriceRangeState(range);
+    
+    // Log del evento de filtro de precio
+    logEvent(analytics, "filter_applied", {
+      filter_type: "price_range",
+      filter_value: `${range.min || 0}-${range.max || 'unlimited'}`,
+      min_price: range.min,
+      max_price: range.max
+    });
+  };
+
   const resetFilters = () => {
-    setActiveFilter("");
-    setSearchQuery("");
-    setPriceRange({ min: null, max: null });
+    const previousFilter = activeFilter;
+    const previousSearch = searchQuery;
+    const previousPriceRange = priceRange;
+    
+    setActiveFilterState("");
+    setSearchQueryState("");
+    setPriceRangeState({ min: null, max: null });
+    
+    // 📊 Analytics: Log del reset de filtros
+    logEvent(analytics, "filters_reset", {
+      previous_filter: previousFilter,
+      previous_search: previousSearch,
+      previous_price_range: `${previousPriceRange.min || 0}-${previousPriceRange.max || 'unlimited'}`
+    });
   };
 
   return (

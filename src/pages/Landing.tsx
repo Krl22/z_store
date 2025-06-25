@@ -13,6 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { Download, X, Smartphone, Zap, Wifi } from "lucide-react";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useFilter } from "../contexts/filter-context";
+import { analytics } from "../lib/firebase";
+import { logEvent } from "firebase/analytics";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -25,6 +28,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 export const Landing = () => {
   const navigate = useNavigate();
+  const { setActiveFilter } = useFilter();
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
@@ -268,14 +272,17 @@ export const Landing = () => {
             {
               name: "Psilocybe cubensis",
               desc: "Conocido por sus efectos psicodélicos y propiedades espirituales",
+              filter: "cubensis"
             },
             {
               name: "Amanita muscaria",
               desc: "El icónico hongo rojo con puntos blancos, usado en rituales chamánicos",
+              filter: null
             },
             {
               name: "Panaeolus cyanescens",
               desc: "Potente y apreciado por su intensidad y claridad mental",
+              filter: null
             },
           ].map((mushroom, i) => (
             <div
@@ -293,7 +300,33 @@ export const Landing = () => {
               <p className="text-white/80 mb-4">{mushroom.desc}</p>
               <button
                 className="w-full py-2 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg hover:from-green-600 hover:to-blue-600 transition-all text-white font-medium"
-                onClick={() => navigate("/tienda")}
+                onClick={() => {
+                  // 📊 Analytics: Track navigation from landing page
+                  logEvent(analytics, "landing_mushroom_click", {
+                    mushroom_name: mushroom.name,
+                    mushroom_type: mushroom.filter || "no_filter",
+                    has_filter: !!mushroom.filter,
+                    button_position: i + 1,
+                    section: "nuestros_hongos_magicos"
+                  });
+                  
+                  // Apply filter if available
+                  if (mushroom.filter) {
+                    // 📊 Analytics: Track filter application from landing
+                    logEvent(analytics, "filter_applied_from_landing", {
+                      filter_type: "category",
+                      filter_value: mushroom.filter,
+                      source_page: "landing",
+                      source_section: "mushroom_cards",
+                      mushroom_name: mushroom.name
+                    });
+                    
+                    setActiveFilter(mushroom.filter);
+                  }
+                  
+                  // Navigate to store
+                  navigate("/tienda");
+                }}
               >
                 Ver en Tienda
               </button>

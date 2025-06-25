@@ -49,7 +49,7 @@ export const YapePayment = () => {
   const openWhatsApp = async () => {
     await handlePaymentConfirmation(); // Cambiar aquí
     const message = encodeURIComponent(generateMessage());
-    const whatsappNumber = "51901997567";
+    const whatsappNumber = "51928817018";
     window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
   };
 
