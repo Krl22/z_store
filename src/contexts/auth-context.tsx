@@ -10,6 +10,7 @@ import {
   User,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   signInWithPopup,
   signOut,
   //   GoogleAuthProvider,
@@ -26,7 +27,10 @@ type AuthContextType = {
   signInWithFacebook: () => Promise<void>;
   signInWithPhone: (phoneNumber: string) => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
-  signUpWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
 };
 
@@ -81,17 +85,73 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      if (!userCredential.user.emailVerified) {
+        await signOut(auth);
+        throw new Error("email-not-verified");
+      }
+    } catch (error: any) {
       console.error("Error signing in with email:", error);
+
+      if (error.message === "email-not-verified") {
+        throw new Error(
+          "Por favor verifica tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada."
+        );
+      }
+
+      throw error;
     }
   };
 
-  const signUpWithEmail = async (email: string, password: string) => {
+  const signUpWithEmail = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; message: string }> => {
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-    } catch (error) {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      // Enviar correo de verificación
+      await sendEmailVerification(userCredential.user, {
+        url: window.location.origin, // URL de retorno después de verificar
+        handleCodeInApp: false,
+      });
+
+      // Cerrar sesión hasta que verifique el email
+      await signOut(auth);
+
+      return {
+        success: true,
+        message: `¡Cuenta creada exitosamente! Hemos enviado un correo de verificación a ${email}. Por favor, revisa tu bandeja de entrada y haz clic en el enlace para activar tu cuenta.`,
+      };
+    } catch (error: any) {
       console.error("Error signing up with email:", error);
+
+      // Manejar errores específicos
+      let errorMessage = "Error al crear la cuenta. Inténtalo de nuevo.";
+
+      if (error.code === "auth/email-already-in-use") {
+        errorMessage =
+          "Este correo electrónico ya está registrado. Intenta iniciar sesión.";
+      } else if (error.code === "auth/weak-password") {
+        errorMessage =
+          "La contraseña es muy débil. Debe tener al menos 6 caracteres.";
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "El correo electrónico no es válido.";
+      }
+
+      return {
+        success: false,
+        message: errorMessage,
+      };
     }
   };
 

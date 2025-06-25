@@ -1,6 +1,3 @@
-// components/top-navbar.tsx
-"use client";
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -48,16 +45,18 @@ import { ProfileDialog } from "./ProfileDialog";
 
 export const TopNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const {
-    signInWithGoogle,
-    signInWithFacebook,
-    signInWithEmail,
-    user,
-    logout,
-  } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, user, logout } =
+    useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoginMode, setIsLoginMode] = useState(true);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleGoogleLogin = async () => {
     try {
@@ -68,25 +67,79 @@ export const TopNavbar = () => {
     }
   };
 
-  const handleFacebookLogin = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage(null);
+    setIsSubmitting(true);
+
+    if (!isLoginMode) {
+      // Validación para registro
+      if (password !== confirmPassword) {
+        setMessage({ type: "error", text: "Las contraseñas no coinciden" });
+        setIsSubmitting(false);
+        return;
+      }
+      if (password.length < 6) {
+        setMessage({
+          type: "error",
+          text: "La contraseña debe tener al menos 6 caracteres",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     try {
-      await signInWithFacebook();
-      setIsOpen(false);
-    } catch (error) {
-      console.error("Error al iniciar sesión con Facebook:", error);
+      if (isLoginMode) {
+        await signInWithEmail(email, password);
+        setIsOpen(false);
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+        setMessage(null);
+      } else {
+        const result = await signUpWithEmail(email, password);
+
+        if (result.success) {
+          setMessage({ type: "success", text: result.message });
+          // No cerrar el dialog inmediatamente para que el usuario lea el mensaje
+          setEmail("");
+          setPassword("");
+          setConfirmPassword("");
+
+          // Opcional: cerrar después de unos segundos
+          setTimeout(() => {
+            setIsOpen(false);
+            setMessage(null);
+          }, 8000);
+        } else {
+          setMessage({ type: "error", text: result.message });
+        }
+      }
+    } catch (error: any) {
+      console.error(
+        isLoginMode ? "Error al iniciar sesión:" : "Error al registrarse:",
+        error
+      );
+
+      setMessage({
+        type: "error",
+        text:
+          error.message ||
+          (isLoginMode ? "Error al iniciar sesión" : "Error al registrarse"),
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await signInWithEmail(email, password);
-      setIsOpen(false);
-      setEmail("");
-      setPassword("");
-    } catch (error) {
-      console.error("Error al iniciar sesión con email:", error);
-    }
+  // Función para resetear el formulario al cambiar de modo
+  const toggleMode = () => {
+    setIsLoginMode(!isLoginMode);
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    setMessage(null); // Limpiar mensajes
   };
 
   const { activeFilter, setActiveFilter, setSearchQuery, priceRange } =
@@ -116,14 +169,14 @@ export const TopNavbar = () => {
   const filters = [
     { id: "all", name: "Todos" },
     { id: "promociones", name: "Promociones" },
+    { id: "cubensis", name: "Cubensis" },
+    { id: "medicinal", name: "Medicinal" },
+    { id: "comestible", name: "Comestible" },
     { id: "Hongo", name: "Hongos" },
     { id: "Sustrato", name: "Sustratos" },
     { id: "Cultivo", name: "Cultivos" },
     { id: "Grano", name: "Granos" },
     { id: "Kits", name: "Kits" },
-    { id: "cubensis", name: "Cubensis" },
-    { id: "medicinal", name: "Medicinal" },
-    { id: "comestible", name: "Comestible" },
   ];
 
   // Verificar si hay un filtro de precio activo
@@ -254,24 +307,64 @@ export const TopNavbar = () => {
                 <Button
                   variant="ghost"
                   className="relative flex items-center justify-center h-10 w-10 rounded-full hover:bg-amber-100/50 dark:hover:bg-gray-800 text-amber-300 dark:text-amber-300 transition-colors"
-                  aria-label="Abrir menú de login"
                 >
                   <User className="h-5 w-5" />
                 </Button>
               </DialogTrigger>
-
-              <DialogContent className="max-w-md p-6 rounded-lg">
+              <DialogContent className="sm:max-w-md mx-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
                 <DialogHeader>
-                  <DialogTitle className="text-2xl text-center text-emerald-800 dark:text-amber-300">
-                    Bienvenido
+                  <DialogTitle className="text-2xl font-bold text-center text-emerald-800 dark:text-amber-400">
+                    {isLoginMode ? "Bienvenido" : "Crear Cuenta"}
                   </DialogTitle>
                   <DialogDescription className="text-center mt-2">
-                    Elige cómo quieres ingresar
+                    {isLoginMode
+                      ? "Elige cómo quieres ingresar"
+                      : "Regístrate para comenzar"}
                   </DialogDescription>
                 </DialogHeader>
 
+                {/* Mensaje de estado */}
+                {message && (
+                  <div
+                    className={`mx-6 p-4 rounded-lg text-sm ${
+                      message.type === "success"
+                        ? "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800"
+                        : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {message.type === "success" ? (
+                        <svg
+                          className="w-5 h-5 mt-0.5 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-5 h-5 mt-0.5 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      )}
+                      <span>{message.text}</span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="mt-6 space-y-4">
-                  {/* Botón de Google */}
+                  {/* Botón de Google - Disponible en ambos modos */}
                   <Button
                     variant="outline"
                     onClick={handleGoogleLogin}
@@ -300,26 +393,9 @@ export const TopNavbar = () => {
                       />
                     </svg>
                     <span className="text-sm font-medium">
-                      Continuar con Google
-                    </span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleFacebookLogin}
-                    className="w-full flex items-center justify-center gap-3 py-5 border border-gray-300 dark:border-gray-600 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        fill="#1877F2"
-                        d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"
-                      />
-                    </svg>
-                    <span className="text-sm font-medium">
-                      Continuar con Facebook
+                      {isLoginMode
+                        ? "Continuar con Google"
+                        : "Registrarse con Google"}
                     </span>
                   </Button>
 
@@ -347,6 +423,10 @@ export const TopNavbar = () => {
                         className="py-5 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700"
                         required
                       />
+
+                      <Label htmlFor="password" className="text-sm font-medium">
+                        Contraseña
+                      </Label>
                       <Input
                         id="password"
                         type="password"
@@ -355,15 +435,57 @@ export const TopNavbar = () => {
                         placeholder="••••••••"
                         className="py-5 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700"
                         required
+                        minLength={6}
                       />
+
+                      {/* Campo de confirmación de contraseña solo para registro */}
+                      {!isLoginMode && (
+                        <>
+                          <Label
+                            htmlFor="confirmPassword"
+                            className="text-sm font-medium"
+                          >
+                            Confirmar Contraseña
+                          </Label>
+                          <Input
+                            id="confirmPassword"
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="••••••••"
+                            className="py-5 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700"
+                            required
+                            minLength={6}
+                          />
+                        </>
+                      )}
                     </div>
 
                     <div className="pt-2 space-y-3">
                       <Button
                         type="submit"
-                        className="w-full py-5 bg-emerald-700 hover:bg-emerald-800 dark:bg-amber-600 dark:hover:bg-amber-700 text-white"
+                        disabled={isSubmitting}
+                        className="w-full py-5 bg-emerald-700 hover:bg-emerald-800 dark:bg-amber-600 dark:hover:bg-amber-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Ingresar
+                        {isSubmitting
+                          ? isLoginMode
+                            ? "Ingresando..."
+                            : "Creando cuenta..."
+                          : isLoginMode
+                          ? "Ingresar"
+                          : "Crear Cuenta"}
+                      </Button>
+
+                      {/* Botón para alternar entre login y registro */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={toggleMode}
+                        className="w-full py-3 text-emerald-700 dark:text-amber-400 hover:bg-emerald-50 dark:hover:bg-amber-900/20"
+                      >
+                        {isLoginMode
+                          ? "¿No tienes cuenta? Regístrate"
+                          : "¿Ya tienes cuenta? Inicia sesión"}
                       </Button>
 
                       <Button

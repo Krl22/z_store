@@ -20,16 +20,12 @@ import { useState } from "react";
 import { ProfileDialog } from "./ProfileDialog";
 
 export const BottomNavbar = () => {
-  const {
-    user,
-    signInWithGoogle,
-    signInWithFacebook,
-    signInWithEmail,
-    logout,
-  } = useAuth();
+  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, logout } = useAuth();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoginMode, setIsLoginMode] = useState(true);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
 
   const handleGoogleLogin = async () => {
@@ -41,25 +37,45 @@ export const BottomNavbar = () => {
     }
   };
 
-  const handleFacebookLogin = async () => {
-    try {
-      await signInWithFacebook();
-      setIsLoginOpen(false);
-    } catch (error) {
-      console.error("Error al iniciar sesión con Facebook:", error);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isLoginMode) {
+      // Validación para registro
+      if (password !== confirmPassword) {
+        alert("Las contraseñas no coinciden");
+        return;
+      }
+      if (password.length < 6) {
+        alert("La contraseña debe tener al menos 6 caracteres");
+        return;
+      }
+    }
+
     try {
-      await signInWithEmail(email, password);
+      if (isLoginMode) {
+        await signInWithEmail(email, password);
+      } else {
+        await signUpWithEmail(email, password);
+      }
       setIsLoginOpen(false);
       setEmail("");
       setPassword("");
+      setConfirmPassword("");
     } catch (error) {
-      console.error("Error al iniciar sesión con email:", error);
+      console.error(
+        isLoginMode ? "Error al iniciar sesión:" : "Error al registrarse:",
+        error
+      );
     }
+  };
+
+  // Función para resetear el formulario al cambiar de modo
+  const toggleMode = () => {
+    setIsLoginMode(!isLoginMode);
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
   };
 
   const handleLogout = async () => {
@@ -181,10 +197,12 @@ export const BottomNavbar = () => {
             <DrawerContent>
               <DrawerHeader>
                 <DrawerTitle className="text-2xl text-center text-emerald-800 dark:text-amber-300">
-                  Bienvenido
+                  {isLoginMode ? "Bienvenido" : "Crear Cuenta"}
                 </DrawerTitle>
                 <DrawerDescription className="text-center mt-2">
-                  Elige cómo quieres ingresar
+                  {isLoginMode
+                    ? "Elige cómo quieres ingresar"
+                    : "Regístrate para comenzar"}
                 </DrawerDescription>
               </DrawerHeader>
 
@@ -218,27 +236,9 @@ export const BottomNavbar = () => {
                     />
                   </svg>
                   <span className="text-sm font-medium">
-                    Continuar con Google
-                  </span>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={handleFacebookLogin}
-                  className="w-full flex items-center justify-center gap-3 py-5 border border-gray-300 dark:border-gray-600 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill="#1877F2"
-                      d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"
-                    />
-                  </svg>
-                  <span className="text-sm font-medium">
-                    Continuar con Facebook
+                    {isLoginMode
+                      ? "Continuar con Google"
+                      : "Registrarse con Google"}
                   </span>
                 </Button>
 
@@ -254,10 +254,7 @@ export const BottomNavbar = () => {
                 {/* Formulario tradicional */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label
-                      htmlFor="email-bottom"
-                      className="text-sm font-medium"
-                    >
+                    <Label htmlFor="email-bottom" className="text-sm font-medium">
                       Correo electrónico
                     </Label>
                     <Input
@@ -269,6 +266,10 @@ export const BottomNavbar = () => {
                       className="py-5 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700"
                       required
                     />
+                    
+                    <Label htmlFor="password-bottom" className="text-sm font-medium">
+                      Contraseña
+                    </Label>
                     <Input
                       id="password-bottom"
                       type="password"
@@ -277,7 +278,27 @@ export const BottomNavbar = () => {
                       placeholder="••••••••"
                       className="py-5 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700"
                       required
+                      minLength={6}
                     />
+
+                    {/* Campo de confirmación de contraseña solo para registro */}
+                    {!isLoginMode && (
+                      <>
+                        <Label htmlFor="confirmPassword-bottom" className="text-sm font-medium">
+                          Confirmar Contraseña
+                        </Label>
+                        <Input
+                          id="confirmPassword-bottom"
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="py-5 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700"
+                          required
+                          minLength={6}
+                        />
+                      </>
+                    )}
                   </div>
 
                   <div className="pt-2 space-y-3">
@@ -285,7 +306,19 @@ export const BottomNavbar = () => {
                       type="submit"
                       className="w-full py-5 bg-emerald-700 hover:bg-emerald-800 dark:bg-amber-600 dark:hover:bg-amber-700 text-white"
                     >
-                      Ingresar
+                      {isLoginMode ? "Ingresar" : "Crear Cuenta"}
+                    </Button>
+
+                    {/* Botón para alternar entre login y registro */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={toggleMode}
+                      className="w-full py-3 text-emerald-700 dark:text-amber-400 hover:bg-emerald-50 dark:hover:bg-amber-900/20"
+                    >
+                      {isLoginMode
+                        ? "¿No tienes cuenta? Regístrate"
+                        : "¿Ya tienes cuenta? Inicia sesión"}
                     </Button>
 
                     <Button
