@@ -11,7 +11,17 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Download, X, Smartphone, Zap, Wifi } from "lucide-react";
+import {
+  Download,
+  X,
+  Smartphone,
+  Zap,
+  Wifi,
+  Star,
+  Shield,
+  Award,
+  Building2,
+} from "lucide-react";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useFilter } from "../contexts/filter-context";
 import { analytics } from "../lib/firebase";
@@ -36,25 +46,21 @@ export const Landing = () => {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    // Verificar si ya se mostró el prompt antes
     const hasSeenInstallPrompt = localStorage.getItem("hasSeenInstallPrompt");
 
-    // Listener para el evento beforeinstallprompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       const beforeInstallPromptEvent = e as BeforeInstallPromptEvent;
       setDeferredPrompt(beforeInstallPromptEvent);
       setIsInstallable(true);
 
-      // Mostrar el prompt solo si no se ha visto antes
       if (!hasSeenInstallPrompt && isMobile) {
         setTimeout(() => {
           setShowInstallPrompt(true);
-        }, 3000); // Mostrar después de 3 segundos
+        }, 3000);
       }
     };
 
-    // Verificar si ya está instalada
     const isStandalone = window.matchMedia(
       "(display-mode: standalone)"
     ).matches;
@@ -95,111 +101,209 @@ export const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-indigo-800 to-blue-900 text-white overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-gray-900 text-white overflow-x-hidden">
       {/* PWA Install Dialog */}
       <Dialog open={showInstallPrompt} onOpenChange={setShowInstallPrompt}>
-        <DialogContent className="sm:max-w-md bg-gradient-to-br from-purple-900/95 to-indigo-900/95 border-purple-500/50 text-white">
+        <DialogContent className="sm:max-w-md bg-slate-800/95 backdrop-blur-xl border border-slate-600/50 text-white shadow-2xl mx-4">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">
-                ¡Instala nuestra App!
+              <DialogTitle className="text-lg sm:text-xl font-semibold text-white">
+                Instalar Aplicación
               </DialogTitle>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleDismissInstall}
-                className="text-white/70 hover:text-white hover:bg-white/10"
+                className="text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-full"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <DialogDescription className="text-white/80">
-              Obtén la mejor experiencia instalando nuestra aplicación
+            <DialogDescription className="text-slate-300 text-sm">
+              Obtén la mejor experiencia con nuestra aplicación empresarial
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 text-center">
               <div className="flex flex-col items-center space-y-2">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center">
-                  <Zap className="h-6 w-6 text-white" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center shadow-lg">
+                  <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-amber-400" />
                 </div>
-                <span className="text-sm text-white/80">Más rápida</span>
+                <span className="text-xs text-slate-300 font-medium">
+                  Rápida
+                </span>
               </div>
               <div className="flex flex-col items-center space-y-2">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
-                  <Smartphone className="h-6 w-6 text-white" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center shadow-lg">
+                  <Smartphone className="h-5 w-5 sm:h-6 sm:w-6 text-amber-400" />
                 </div>
-                <span className="text-sm text-white/80">Nativa</span>
+                <span className="text-xs text-slate-300 font-medium">
+                  Nativa
+                </span>
               </div>
               <div className="flex flex-col items-center space-y-2">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
-                  <Wifi className="h-6 w-6 text-white" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center shadow-lg">
+                  <Wifi className="h-5 w-5 sm:h-6 sm:w-6 text-amber-400" />
                 </div>
-                <span className="text-sm text-white/80">Sin conexión</span>
+                <span className="text-xs text-slate-300 font-medium">
+                  Offline
+                </span>
               </div>
             </div>
 
             <div className="space-y-3">
               <Button
                 onClick={handleInstallClick}
-                className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105"
+                className="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-medium py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
                 disabled={!deferredPrompt}
               >
-                <Download className="h-5 w-5 mr-2" />
-                Instalar App
+                <Download className="h-4 w-4 mr-2" />
+                Instalar Aplicación
               </Button>
 
               <Button
                 variant="outline"
                 onClick={handleDismissInstall}
-                className="w-full border-white/30 text-white/80 hover:bg-white/10 hover:text-white"
+                className="w-full border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-xl"
               >
-                Ahora no
+                Más tarde
               </Button>
             </div>
 
-            <p className="text-xs text-white/60 text-center">
-              Podrás instalar la app más tarde desde el menú de tu navegador
+            <p className="text-xs text-slate-400 text-center leading-relaxed">
+              También puedes instalar desde el menú de tu navegador
             </p>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Hero Section */}
-      <section className="relative h-screen w-full overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/70 z-10"></div>
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center z-20 px-4">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 animate-pulse pb-2 leading-tight">
-            Mundo Mágico
-            <br />
-            de Hongos
-          </h1>
-          <p className="text-lg sm:text-xl md:text-2xl mb-8 max-w-2xl px-4 text-white/90">
-            Descubre la magia y el misterio de los hongos en nuestra colección
-            única
-          </p>
-          <button
-            onClick={() => navigate("/tienda")}
-            className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-opacity-50"
-          >
-            Explorar Colección
-          </button>
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden px-4 sm:px-6">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `radial-gradient(circle at 25% 25%, rgba(245, 158, 11, 0.1) 0%, transparent 50%),
+                             radial-gradient(circle at 75% 75%, rgba(148, 163, 184, 0.1) 0%, transparent 50%)`,
+            }}
+          />
         </div>
 
-        {/* Floating elements */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
-          {[...Array(15)].map((_, i) => (
+        {/* Content */}
+        <div className="relative z-10 text-center max-w-6xl mx-auto w-full">
+          <div className="mb-6 sm:mb-8">
+            {/* Company Logo/Name */}
+            <div className="flex items-center justify-center mb-6 sm:mb-8">
+              <img
+                src="/pwa-512x512.png"
+                alt="Zeta Dorada Logo"
+                className="h-12 w-12 sm:h-16 sm:w-16 lg:h-20 lg:w-20 mr-3 sm:mr-4"
+              />
+              <span className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-amber-500 tracking-wide">
+                ZETA DORADA
+              </span>
+            </div>
+
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-bold mb-4 sm:mb-6 leading-tight">
+              <span className="block text-white font-light">
+                Especialistas en
+              </span>
+              <span className="block bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent font-bold">
+                Hongos Premium
+              </span>
+              <span className="block text-slate-300 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-light mt-1 sm:mt-2">
+                de Calidad
+              </span>
+            </h1>
+          </div>
+
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl mb-6 sm:mb-8 lg:mb-10 max-w-3xl mx-auto text-slate-300 font-light leading-relaxed px-4">
+            Líder en distribución de hongos especializados con más de una década
+            de experiencia
+          </p>
+
+          {/* Slider integrado en la sección principal */}
+          <div className="mb-8 sm:mb-10 lg:mb-12">
+            <Slider
+              dots={true}
+              infinite={true}
+              speed={600}
+              slidesToShow={3}
+              slidesToScroll={1}
+              autoplay={true}
+              autoplaySpeed={4000}
+              pauseOnHover={true}
+              arrows={false}
+              responsive={[
+                {
+                  breakpoint: 1024,
+                  settings: {
+                    slidesToShow: 2,
+                    dots: true,
+                  },
+                },
+                {
+                  breakpoint: 640,
+                  settings: {
+                    slidesToShow: 1,
+                    dots: true,
+                  },
+                },
+              ]}
+              className="mx-auto max-w-6xl"
+            >
+              {[
+                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTLCDRfBPz_qZFNxCfcs4hvYg6RTsP6WwXpYA&s",
+                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSl45fUA0Q_P7Z1e60lSFlLODyhE6ZpMAsbiQ&s",
+                "https://m.media-amazon.com/images/I/61VilH2DjjL._AC_SL1024_.jpg",
+                "https://upload.wikimedia.org/wikipedia/commons/1/15/Austernseitling-1.jpg",
+                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQC_FFF8zwX_LtzDJyIXSjzvHx9Ack6cSS_nA&s",
+                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT7-LtNfS24g0sNuAh-kNdOGm9oM3lt-CE7ZA&s",
+              ].map((item, index) => (
+                <div key={item} className="px-2 sm:px-3 outline-none">
+                  <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl p-4 sm:p-6 h-48 sm:h-56 lg:h-64 flex items-center justify-center transition-all duration-300 hover:bg-slate-800/60 hover:shadow-2xl border border-slate-700/30 hover:border-amber-500/30">
+                    <img
+                      src={item}
+                      alt={`Producto premium ${index + 1}`}
+                      className="max-h-full max-w-full object-contain transition-transform duration-500 hover:scale-105 rounded-xl"
+                    />
+                  </div>
+                </div>
+              ))}
+            </Slider>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4">
+            <Button
+              onClick={() => navigate("/tienda")}
+              className="w-full sm:w-auto bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition-all duration-300 shadow-lg hover:shadow-xl"
+            >
+              Ver Catálogo
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto border-slate-600 text-slate-300 hover:bg-slate-800/50 hover:text-white py-3 sm:py-4 px-6 sm:px-8 rounded-xl text-base sm:text-lg font-medium"
+            >
+              Conocer Empresa
+            </Button>
+          </div>
+        </div>
+
+        {/* Subtle Floating Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(6)].map((_, i) => (
             <div
               key={i}
-              className="absolute rounded-full bg-white/10 backdrop-blur-sm"
+              className="absolute rounded-full bg-amber-500/5 backdrop-blur-sm"
               style={{
-                width: `${Math.random() * 15 + 5}px`,
-                height: `${Math.random() * 15 + 5}px`,
+                width: `${Math.random() * 12 + 6}px`,
+                height: `${Math.random() * 12 + 6}px`,
                 top: `${Math.random() * 100}%`,
                 left: `${Math.random() * 100}%`,
                 animation: `float ${
-                  Math.random() * 15 + 10
+                  Math.random() * 25 + 20
                 }s infinite ease-in-out ${Math.random() * 5}s`,
               }}
             />
@@ -207,215 +311,153 @@ export const Landing = () => {
         </div>
       </section>
 
-      {/* Slider Section */}
-      <section className="py-16 bg-gradient-to-b from-blue-900/80 to-purple-900/80 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-10 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
-            Nuestra Colección
-          </h2>
+      {/* Company Values Section */}
+      <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 text-white">
+              ¿Por qué Zeta Dorada?
+            </h2>
+            <p className="text-base sm:text-lg lg:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed px-4">
+              Comprometidos con la excelencia y la calidad en cada producto que
+              ofrecemos
+            </p>
+          </div>
 
-          <Slider
-            dots={true}
-            infinite={true}
-            speed={600}
-            slidesToShow={3}
-            slidesToScroll={1}
-            autoplay={true}
-            autoplaySpeed={3500}
-            pauseOnHover={true}
-            arrows={false}
-            responsive={[
-              {
-                breakpoint: 1024,
-                settings: {
-                  slidesToShow: 2,
-                  dots: false,
-                },
-              },
-              {
-                breakpoint: 640,
-                settings: {
-                  slidesToShow: 1,
-                  dots: true,
-                },
-              },
-            ]}
-            className="mx-auto max-w-5xl"
-          >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {[
-              "https://i.pinimg.com/736x/80/44/53/80445355939eb54cfe276f3b2e881c30.jpg",
-              "https://aldianews.com/sites/default/files/styles/850x520/public/articles/111320_ls_mushroom_feat-1030x580.jpg?itok=7j7Wf4G0",
-              "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcStd5zBqQe6rF8yi88Vfcl561HjWBykf1-xEGIJa8lJntju9kJ9BrIQCxGQeWbAuqOLNDE",
-            ].map((item) => (
-              <div key={item} className="px-2 outline-none">
-                <div className="bg-white/10 rounded-xl p-4 h-72 flex items-center justify-center transition-all duration-300 hover:bg-white/20 hover:shadow-lg">
-                  <img
-                    src={`${item}`}
-                    alt={`Hongos mágicos ${item}`}
-                    className="max-h-full max-w-full object-contain transition-transform duration-500 hover:scale-110"
-                  />
+              {
+                icon: Star,
+                title: "Calidad Certificada",
+                description:
+                  "Productos rigurosamente seleccionados y verificados por nuestro equipo de expertos",
+                gradient: "from-amber-500 to-amber-600",
+              },
+              {
+                icon: Shield,
+                title: "Confianza y Seguridad",
+                description:
+                  "Procesos seguros y transparentes respaldados por años de experiencia en el sector",
+                gradient: "from-slate-500 to-slate-600",
+              },
+              {
+                icon: Award,
+                title: "Experiencia Comprobada",
+                description:
+                  "Más de 10 años liderando el mercado especializado con resultados excepcionales",
+                gradient: "from-blue-500 to-blue-600",
+              },
+            ].map((feature, i) => (
+              <div
+                key={i}
+                className="group bg-slate-800/30 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-slate-700/50 hover:border-amber-500/30 transition-all duration-300 hover:bg-slate-800/50"
+              >
+                <div
+                  className={`w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br ${feature.gradient} rounded-2xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-105 transition-transform duration-300 shadow-lg`}
+                >
+                  <feature.icon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold mb-3 sm:mb-4 text-white group-hover:text-amber-100 transition-colors">
+                  {feature.title}
+                </h3>
+                <p className="text-sm sm:text-base text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors">
+                  {feature.description}
+                </p>
               </div>
             ))}
-          </Slider>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-16 px-4 sm:px-6 max-w-7xl mx-auto">
-        <h2 className="text-3xl sm:text-4xl font-bold mb-12 text-center text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
-          Nuestros Hongos Mágicos
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[
-            {
-              name: "Psilocybe cubensis",
-              desc: "Conocido por sus efectos psicodélicos y propiedades espirituales",
-              filter: "cubensis"
-            },
-            {
-              name: "Amanita muscaria",
-              desc: "El icónico hongo rojo con puntos blancos, usado en rituales chamánicos",
-              filter: null
-            },
-            {
-              name: "Panaeolus cyanescens",
-              desc: "Potente y apreciado por su intensidad y claridad mental",
-              filter: null
-            },
-          ].map((mushroom, i) => (
-            <div
-              key={i}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:border-pink-500 transition-all duration-300 hover:shadow-lg hover:bg-white/20"
-            >
-              <div className="w-full h-48 mb-4 rounded-lg bg-gradient-to-br from-purple-500/70 to-pink-600/70 flex items-center justify-center overflow-hidden">
-                <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
-                  <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-red-500 rounded-full animate-spin-slow"></div>
-                </div>
-              </div>
-              <h3 className="text-xl font-bold mb-2 text-white">
-                {mushroom.name}
-              </h3>
-              <p className="text-white/80 mb-4">{mushroom.desc}</p>
-              <button
-                className="w-full py-2 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg hover:from-green-600 hover:to-blue-600 transition-all text-white font-medium"
-                onClick={() => {
-                  // 📊 Analytics: Track navigation from landing page
-                  logEvent(analytics, "landing_mushroom_click", {
-                    mushroom_name: mushroom.name,
-                    mushroom_type: mushroom.filter || "no_filter",
-                    has_filter: !!mushroom.filter,
-                    button_position: i + 1,
-                    section: "nuestros_hongos_magicos"
-                  });
-                  
-                  // Apply filter if available
-                  if (mushroom.filter) {
-                    // 📊 Analytics: Track filter application from landing
-                    logEvent(analytics, "filter_applied_from_landing", {
-                      filter_type: "category",
-                      filter_value: mushroom.filter,
-                      source_page: "landing",
-                      source_section: "mushroom_cards",
-                      mushroom_name: mushroom.name
-                    });
-                    
-                    setActiveFilter(mushroom.filter);
-                  }
-                  
-                  // Navigate to store
-                  navigate("/tienda");
-                }}
-              >
-                Ver en Tienda
-              </button>
-            </div>
-          ))}
+          </div>
         </div>
       </section>
 
       {/* PWA Install Section */}
-      <section className="py-16 px-4 sm:px-6 bg-gradient-to-r from-purple-900/50 to-indigo-900/50">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 hover:border-purple-400 transition-all duration-300">
-            <div className="mb-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Smartphone className="h-10 w-10 text-white" />
+      <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6 bg-slate-800/20 backdrop-blur-sm">
+        <div className="max-w-5xl mx-auto text-center">
+          <div className="bg-slate-800/30 backdrop-blur-sm rounded-3xl p-8 sm:p-12 border border-slate-700/50 hover:border-amber-500/30 transition-all duration-300">
+            <div className="mb-6 sm:mb-8">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-amber-600 to-amber-700 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-2xl">
+                <Smartphone className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
               </div>
-              <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">
-                ¡Lleva la Magia Contigo!
+
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 text-white">
+                Aplicación Empresarial
               </h2>
-              <p className="text-lg text-white/80 mb-6 max-w-2xl mx-auto">
-                Instala nuestra aplicación y disfruta de una experiencia más
-                rápida, acceso sin conexión y notificaciones de nuevos
-                productos.
+
+              <p className="text-base sm:text-lg lg:text-xl text-slate-400 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed px-4">
+                Accede a nuestra plataforma empresarial optimizada con
+                funcionalidades avanzadas y acceso sin conexión.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="flex flex-col items-center space-y-3">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center">
-                  <Zap className="h-8 w-8 text-white" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mb-8 sm:mb-12">
+              {[
+                {
+                  icon: Zap,
+                  title: "Alto Rendimiento",
+                  description:
+                    "Plataforma optimizada para máxima eficiencia y velocidad",
+                  gradient: "from-amber-600 to-amber-700",
+                },
+                {
+                  icon: Smartphone,
+                  title: "Interfaz Profesional",
+                  description:
+                    "Diseño empresarial adaptado para uso profesional",
+                  gradient: "from-slate-600 to-slate-700",
+                },
+                {
+                  icon: Wifi,
+                  title: "Acceso Sin Conexión",
+                  description:
+                    "Funcionalidad completa incluso sin conexión a internet",
+                  gradient: "from-blue-600 to-blue-700",
+                },
+              ].map((feature, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col items-center space-y-3 sm:space-y-4"
+                >
+                  <div
+                    className={`w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br ${feature.gradient} rounded-2xl flex items-center justify-center shadow-xl`}
+                  >
+                    <feature.icon className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-semibold text-white text-center">
+                    {feature.title}
+                  </h3>
+                  <p className="text-sm sm:text-base text-slate-400 text-center leading-relaxed px-2">
+                    {feature.description}
+                  </p>
                 </div>
-                <h3 className="text-lg font-semibold text-white">
-                  Súper Rápida
-                </h3>
-                <p className="text-sm text-white/70 text-center">
-                  Carga instantánea y navegación fluida
-                </p>
-              </div>
-
-              <div className="flex flex-col items-center space-y-3">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
-                  <Smartphone className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-white">
-                  Experiencia Nativa
-                </h3>
-                <p className="text-sm text-white/70 text-center">
-                  Como una app real en tu dispositivo
-                </p>
-              </div>
-
-              <div className="flex flex-col items-center space-y-3">
-                <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
-                  <Wifi className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-white">
-                  Funciona Sin Internet
-                </h3>
-                <p className="text-sm text-white/70 text-center">
-                  Accede a tu contenido favorito offline
-                </p>
-              </div>
+              ))}
             </div>
 
-            {isInstallable && deferredPrompt ? (
-              <Button
-                onClick={handleInstallClick}
-                className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-              >
-                <Download className="h-6 w-6 mr-3" />
-                Instalar App Ahora
-              </Button>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-white/60 text-sm">
-                  {window.matchMedia("(display-mode: standalone)").matches ||
-                  (window.navigator as any).standalone
-                    ? "¡App ya instalada! Gracias por usar nuestra aplicación."
-                    : "Para instalar la app, usa el menú de tu navegador o espera la notificación automática."}
-                </p>
+            <div className="space-y-4 sm:space-y-6">
+              {isInstallable && deferredPrompt ? (
                 <Button
-                  onClick={() => navigate("/tienda")}
-                  variant="outline"
-                  className="border-white/30 text-white hover:bg-white/10 hover:text-white py-3 px-6 rounded-full"
+                  onClick={handleInstallClick}
+                  className="w-full sm:w-auto bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-semibold py-3 sm:py-4 px-8 sm:px-10 rounded-xl text-base sm:text-lg transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
-                  Ir a la Tienda
+                  <Download className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3" />
+                  Instalar Aplicación
                 </Button>
-              </div>
-            )}
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-slate-500 text-sm max-w-2xl mx-auto leading-relaxed px-4">
+                    {window.matchMedia("(display-mode: standalone)").matches ||
+                    (window.navigator as any).standalone
+                      ? "¡Aplicación instalada correctamente! Gracias por confiar en Zeta Dorada."
+                      : "Para instalar la aplicación, utiliza el menú de tu navegador o espera la notificación automática."}
+                  </p>
+                  <Button
+                    onClick={() => navigate("/tienda")}
+                    variant="outline"
+                    className="w-full sm:w-auto border-slate-600 text-slate-300 hover:bg-slate-800/50 hover:text-white py-3 sm:py-4 px-6 sm:px-8 rounded-xl text-base sm:text-lg font-medium"
+                  >
+                    Acceder al Catálogo
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>

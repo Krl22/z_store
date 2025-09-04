@@ -505,8 +505,8 @@ export const TopNavbar = () => {
         </div>
       </nav>
 
-      {/* Filtros */}
-      <div className="overflow-x-auto px-6 py-4 bg-amber-50 dark:bg-gray-800 scrollbar-hide">
+      {/* Filtros - Solo visible en móvil */}
+      <div className="lg:hidden overflow-x-auto px-6 py-4 bg-amber-50 dark:bg-gray-800 scrollbar-hide">
         <div className="flex gap-2 min-w-max">
           {filters.map((filter) => (
             <Button

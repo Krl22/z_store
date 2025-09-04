@@ -12,6 +12,7 @@ import { useFavorites } from "../contexts/favorites-context";
 import { Heart } from "lucide-react";
 import { analytics } from "../lib/firebase";
 import { logEvent } from "firebase/analytics";
+import { FilterSidebar } from "../components/FilterSidebar";
 
 type Producto = {
   ID: string;
@@ -216,78 +217,91 @@ export default function Home() {
   };
 
   return (
-    <div className="px-4 py-6 lg:px-8 mt-42 mb-14 lg:mt-28">
-      <h1 className="text-2xl lg:text-3xl font-bold mb-6 text-emerald-800 dark:text-amber-300  text-center lg:text-left">
-        {activeFilter
-          ? `Productos: ${activeFilter}`
-          : "Todos nuestros productos"}
-      </h1>
-
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
-        {filteredProducts.map((producto) => (
-          <div
-            key={producto.ID}
-            onClick={() => openProductDialog(producto)}
-            className="group border border-amber-100 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer transform hover:-translate-y-1 hover:scale-[1.02]"
-          >
-            {/* Contenedor de imagen con efecto de zoom */}
-            <div className="relative pb-[100%] mb-3 rounded-md overflow-hidden">
-              <img
-                src={`/${producto.image}`}
-                alt={producto.Hongo}
-                className="absolute w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              {/* Botón de favoritos */}
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={(e) => handleAddToFavorites(producto, e)}
-                className={`absolute top-2 right-2 h-8 w-8 p-0 rounded-full transition-all duration-200 ${
-                  isFavorite(producto.ID)
-                    ? "bg-red-500 hover:bg-red-600 text-white"
-                    : "bg-white/80 hover:bg-white text-gray-600 hover:text-red-500"
-                } ${favoritedItems[producto.ID] ? "scale-125" : "scale-100"}`}
-              >
-                <Heart
-                  className={`h-4 w-4 transition-all duration-200 ${
-                    isFavorite(producto.ID) ? "fill-current" : ""
-                  }`}
-                />
-              </Button>
-              {/* Badge de promoción si existe */}
-              {producto.promocion === "true" && (
-                <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                  Oferta
-                </div>
-              )}
-            </div>
-
-            {/* Información mínima */}
-            <h2 className="text-base lg:text-lg font-semibold text-emerald-800 dark:text-amber-200 mb-1 line-clamp-1">
-              {producto.Hongo}
-            </h2>
-
-            <div className="flex items-center justify-between mt-auto">
-              <p className="font-bold text-emerald-700 dark:text-amber-400 text-base lg:text-lg">
-                S/{producto.precio}
-              </p>
-              <button
-                onClick={(e) => handleAddToCart(producto, e)}
-                className={`px-2 lg:px-3 py-1 text-xs lg:text-sm ${
-                  addedItems[producto.ID]
-                    ? "bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700"
-                    : "bg-amber-400 hover:bg-amber-500 dark:bg-amber-600 dark:hover:bg-amber-700"
-                } 
-                  text-emerald-800 dark:text-white rounded transition-all duration-150 font-medium min-w-[2rem] group-hover:opacity-100 opacity-90`}
-              >
-                {addedItems[producto.ID] ? "✓" : "+"}
-              </button>
-            </div>
-          </div>
-        ))}
+    <div className="flex min-h-screen">
+      {/* Desktop Sidebar - Hidden on mobile */}
+      <div className="hidden lg:block w-80 fixed left-0 top-0 h-full pt-16 z-10">
+        <FilterSidebar className="h-full" />
       </div>
 
-      {/* También puedes agregar el botón de favoritos en el diálogo del producto */}
+      {/* Main Content */}
+      <div className="flex-1 lg:ml-80">
+        <div className="px-4 py-6 lg:px-8 mt-16 mb-14 lg:mt-16">
+          <h1 className="text-2xl lg:text-3xl font-bold mb-6 text-emerald-800 dark:text-amber-300 text-center lg:text-left">
+            {activeFilter && activeFilter !== "all"
+              ? `Productos: ${activeFilter}`
+              : "Todos nuestros productos"}
+          </h1>
+
+          {/* Products Grid - Centered on desktop */}
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
+              {filteredProducts.map((producto) => (
+                <div
+                  key={producto.ID}
+                  onClick={() => openProductDialog(producto)}
+                  className="group border border-amber-100 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer transform hover:-translate-y-1 hover:scale-[1.02]"
+                >
+                  {/* Contenedor de imagen con efecto de zoom */}
+                  <div className="relative pb-[100%] mb-3 rounded-md overflow-hidden">
+                    <img
+                      src={`/${producto.image}`}
+                      alt={producto.Hongo}
+                      className="absolute w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    {/* Botón de favoritos */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => handleAddToFavorites(producto, e)}
+                      className={`absolute top-2 right-2 h-8 w-8 p-0 rounded-full transition-all duration-200 ${
+                        isFavorite(producto.ID)
+                          ? "bg-red-500 hover:bg-red-600 text-white"
+                          : "bg-white/80 hover:bg-white text-gray-600 hover:text-red-500"
+                      } ${favoritedItems[producto.ID] ? "scale-125" : "scale-100"}`}
+                    >
+                      <Heart
+                        className={`h-4 w-4 transition-all duration-200 ${
+                          isFavorite(producto.ID) ? "fill-current" : ""
+                        }`}
+                      />
+                    </Button>
+                    {/* Badge de promoción si existe */}
+                    {producto.promocion === "true" && (
+                      <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                        Oferta
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Información mínima */}
+                  <h2 className="text-base lg:text-lg font-semibold text-emerald-800 dark:text-amber-200 mb-1 line-clamp-1">
+                    {producto.Hongo}
+                  </h2>
+
+                  <div className="flex items-center justify-between mt-auto">
+                    <p className="font-bold text-emerald-700 dark:text-amber-400 text-base lg:text-lg">
+                      S/{producto.precio}
+                    </p>
+                    <button
+                      onClick={(e) => handleAddToCart(producto, e)}
+                      className={`px-2 lg:px-3 py-1 text-xs lg:text-sm ${
+                        addedItems[producto.ID]
+                          ? "bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+                          : "bg-amber-400 hover:bg-amber-500 dark:bg-amber-600 dark:hover:bg-amber-700"
+                      } 
+                        text-emerald-800 dark:text-white rounded transition-all duration-150 font-medium min-w-[2rem] group-hover:opacity-100 opacity-90`}
+                    >
+                      {addedItems[producto.ID] ? "✓" : "+"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Product Dialog - unchanged */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[625px]">
           <DialogHeader>
