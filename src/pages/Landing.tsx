@@ -20,12 +20,9 @@ import {
   Star,
   Shield,
   Award,
-  Building2,
 } from "lucide-react";
 import { useIsMobile } from "../hooks/useIsMobile";
-import { useFilter } from "../contexts/filter-context";
-import { analytics } from "../lib/firebase";
-import { logEvent } from "firebase/analytics";
+// import { useFilter } from "../contexts/filter-context";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -38,7 +35,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 export const Landing = () => {
   const navigate = useNavigate();
-  const { setActiveFilter } = useFilter();
+  // const { setActiveFilter } = useFilter();
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
