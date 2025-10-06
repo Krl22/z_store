@@ -95,8 +95,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       const timeoutId = setTimeout(() => {
         if (favoritesState.items.length > 0) {
           showLocalNotification(
-            "❤️ ¡Tus favoritos te extrañan!",
-            `Tienes ${favoritesState.items.length} productos en favoritos. ¿Qué tal si los agregas al carrito?`
+            "🔖 ¡Tus guardados te extrañan!",
+            `Tienes ${favoritesState.items.length} productos guardados. ¿Qué tal si los agregas al carrito?`
           );
         }
       }, 3 * 24 * 60 * 60 * 1000); // 3 days

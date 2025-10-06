@@ -30,6 +30,7 @@ import { CartDrawerContent } from "./CartDrawerContent";
 import { FavoritesDrawerContent } from "./FavoritesDrawerContent";
 import { CartBadge } from "./CartBadge";
 import { useAuth } from "../contexts/auth-context";
+import { useFavorites } from "../contexts/favorites-context";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,15 +39,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Heart, LogOut } from "lucide-react";
+import { Bookmark, LogOut } from "lucide-react";
 import { NotificationSettings } from "./NotificationSettings";
-import { FavoritesBadge } from "./FavoritesBadge";
 import { ProfileDialog } from "./ProfileDialog";
 
 export const TopNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { signInWithGoogle, signInWithEmail, signUpWithEmail, user, logout } =
     useAuth();
+  const { state: favoritesState } = useFavorites();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showProfileDialog, setShowProfileDialog] = useState(false);
@@ -257,47 +258,61 @@ export const TopNavbar = () => {
                   <User className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {user.displayName || "Usuario"}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user.email}
-                    </p>
-                  </div>
+              <DropdownMenuContent className="w-52 p-1" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal px-2 py-2">
+                  <p className="text-xs text-muted-foreground truncate">
+                    {user.email}
+                  </p>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
                 {/* Configuración de notificaciones */}
-                <div className="p-2">
+                <div className="p-1">
                   <NotificationSettings />
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
+
+                <DropdownMenuItem
+                  onClick={() => setShowProfileDialog(true)}
+                  className="px-2 py-2"
+                >
                   <User className="mr-2 h-4 w-4" />
-                  Mi Perfil
+                  <span className="text-sm">Mi Perfil</span>
                 </DropdownMenuItem>
+
                 <Drawer>
                   <DrawerTrigger asChild>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <Heart className="mr-2 h-4 w-4" />
-                      Favoritos
-                      <FavoritesBadge />
+                    <DropdownMenuItem
+                      onSelect={(e) => e.preventDefault()}
+                      className="px-2 py-2"
+                    >
+                      <Bookmark className="mr-2 h-4 w-4" />
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-sm">Guardados</span>
+                        {favoritesState.items.length > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            ({favoritesState.items.length})
+                          </span>
+                        )}
+                      </div>
                     </DropdownMenuItem>
                   </DrawerTrigger>
                   <DrawerContent>
                     <DrawerHeader>
-                      <DrawerTitle>Favoritos</DrawerTitle>
+                      <DrawerTitle>Guardados</DrawerTitle>
                     </DrawerHeader>
                     <FavoritesDrawerContent />
                   </DrawerContent>
                 </Drawer>
 
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="px-2 py-2 text-red-600 dark:text-red-400"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
-                  Cerrar sesión
+                  <span className="text-sm">Cerrar sesión</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

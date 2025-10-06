@@ -34,6 +34,7 @@ function App() {
                   <ConditionalTopNavBar />
                   <Routes>
                     <Route path="/" element={<Landing />} />
+                    <Route path="/home" element={<Home />} />
                     <Route path="/tienda" element={<Home />} />
                   </Routes>
                   <ConditionalBottomNavBar />

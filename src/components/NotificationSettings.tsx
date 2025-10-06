@@ -18,18 +18,18 @@ export const NotificationSettings = () => {
 
   if (permission === "granted") {
     return (
-      <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-        <Bell className="h-4 w-4" />
-        <span className="text-sm">Notificaciones activadas</span>
+      <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+        <Bell className="h-3 w-3" />
+        <span className="text-xs">Notificaciones activadas</span>
       </div>
     );
   }
 
   if (permission === "denied") {
     return (
-      <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-        <BellOff className="h-4 w-4" />
-        <span className="text-sm">Notificaciones bloqueadas</span>
+      <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
+        <BellOff className="h-3 w-3" />
+        <span className="text-xs">Notificaciones bloqueadas</span>
       </div>
     );
   }
@@ -38,11 +38,11 @@ export const NotificationSettings = () => {
     <Button
       onClick={handleRequestPermission}
       disabled={isRequesting}
-      variant="outline"
+      variant="ghost"
       size="sm"
-      className="flex items-center gap-2"
+      className="flex items-center gap-1.5 h-7 px-2 text-xs hover:bg-accent/50"
     >
-      <Bell className="h-4 w-4" />
+      <Bell className="h-3 w-3" />
       {isRequesting ? "Solicitando..." : "Activar Notificaciones"}
     </Button>
   );

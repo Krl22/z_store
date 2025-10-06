@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Home, User, ShoppingCart, Heart, LogOut } from "lucide-react";
+import { Home, User, ShoppingCart, Bookmark, LogOut } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -102,15 +102,15 @@ export const BottomNavbar = () => {
               variant="ghost"
               className="relative flex flex-col items-center gap-1 text-emerald-800 dark:text-gray-300 hover:bg-amber-100 hover:text-emerald-900 dark:hover:bg-gray-700/80 dark:hover:text-amber-100 transition-colors"
             >
-              <Heart className="h-5 w-5" />
+              <Bookmark className="h-5 w-5" />
               <FavoritesBadge />
             </Button>
           </DrawerTrigger>
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle>Favoritos</DrawerTitle>
+              <DrawerTitle>Guardados</DrawerTitle>
               <DrawerDescription>
-                Gestiona tus productos favoritos
+                Gestiona tus productos guardados
               </DrawerDescription>
             </DrawerHeader>
             <FavoritesDrawerContent />

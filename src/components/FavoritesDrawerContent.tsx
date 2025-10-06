@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useFavorites } from "../contexts/favorites-context";
 import { useCart } from "../contexts/cart-context";
-import { Trash2, ShoppingCart, Heart } from "lucide-react";
+import { Trash2, ShoppingCart, Bookmark } from "lucide-react";
 import { useState } from "react";
 
 export const FavoritesDrawerContent = () => {
@@ -40,12 +40,12 @@ export const FavoritesDrawerContent = () => {
     return (
       <div className="flex flex-col h-[80vh]">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">Mis Favoritos</h2>
+          <h2 className="text-lg font-semibold">Mis Guardados</h2>
         </div>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600 mx-auto mb-2"></div>
-            <p className="text-sm text-gray-500">Cargando favoritos...</p>
+            <p className="text-sm text-gray-500">Cargando guardados...</p>
           </div>
         </div>
       </div>
@@ -57,8 +57,8 @@ export const FavoritesDrawerContent = () => {
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-2">
-          <Heart className="h-5 w-5 text-red-500" />
-          <h2 className="text-lg font-semibold">Mis Favoritos</h2>
+          <Bookmark className="h-5 w-5 text-blue-500" />
+          <h2 className="text-lg font-semibold">Mis Guardados</h2>
           <span className="text-sm text-gray-500">({state.items.length})</span>
         </div>
 
@@ -81,12 +81,12 @@ export const FavoritesDrawerContent = () => {
       {state.items.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <Heart className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <Bookmark className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              No tienes favoritos aún
+              No tienes guardados aún
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Agrega productos a tus favoritos para verlos aquí
+              Agrega productos a tus guardados para verlos aquí
             </p>
           </div>
         </div>

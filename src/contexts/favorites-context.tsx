@@ -51,7 +51,7 @@ const favoritesReducer = (
         (item) => item.ID === action.payload.ID
       );
       if (existingItem) {
-        return state; // Ya está en favoritos
+        return state; // Ya está en guardados
       }
       return {
         ...state,
@@ -101,7 +101,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
   const { user } = useAuth();
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Función para sincronizar favoritos con Firebase
+  // Función para sincronizar guardados con Firebase
   const syncFavoritesToFirebase = async () => {
     if (!user) return;
 
@@ -119,7 +119,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // Función para verificar si un producto está en favoritos
+  // Función para verificar si un producto está en guardados
   const isFavorite = (productId: string): boolean => {
     return state.items.some((item) => item.ID === productId);
   };
