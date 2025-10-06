@@ -6,6 +6,43 @@ import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Chunk para React y dependencias core
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          
+          // Chunk para UI components (Radix, Lucide, etc.)
+          'ui-vendor': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu', 
+            '@radix-ui/react-select',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-tabs',
+            'lucide-react'
+          ],
+          
+          // Chunk para Firebase y servicios
+          'firebase-vendor': [
+            'firebase/app',
+            'firebase/auth',
+            'firebase/firestore',
+            'firebase/storage'
+          ],
+          
+          // Chunk para utilidades y librerías pequeñas
+          'utils-vendor': [
+            'clsx',
+            'tailwind-merge',
+            'class-variance-authority'
+          ]
+        }
+      }
+    },
+    // Aumentar el límite para chunks específicos que necesiten ser más grandes
+    chunkSizeWarningLimit: 600
+  },
   plugins: [
     react(), 
     tailwindcss(),
