@@ -16,10 +16,14 @@ export default defineConfig({
           // Chunk para UI components (Radix, Lucide, etc.)
           'ui-vendor': [
             '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu', 
-            '@radix-ui/react-select',
-            '@radix-ui/react-toast',
-            '@radix-ui/react-tabs',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-avatar',
+            '@radix-ui/react-label',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-scroll-area',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-switch',
             'lucide-react'
           ],
           
@@ -28,14 +32,32 @@ export default defineConfig({
             'firebase/app',
             'firebase/auth',
             'firebase/firestore',
-            'firebase/storage'
+            'firebase/storage',
+            '@firebase/analytics'
           ],
           
-          // Chunk para utilidades y librerías pequeñas
+          // Chunk para utilidades y librerías
           'utils-vendor': [
             'clsx',
             'tailwind-merge',
-            'class-variance-authority'
+            'class-variance-authority',
+            'next-themes',
+            'sonner',
+            'vaul'
+          ],
+          
+          // Chunk para formularios y validación
+          'forms-vendor': [
+            'react-hook-form',
+            '@hookform/resolvers',
+            'zod'
+          ],
+          
+          // Chunk para carousels y sliders
+          'carousel-vendor': [
+            'embla-carousel-react',
+            'react-slick',
+            'slick-carousel'
           ]
         }
       }
