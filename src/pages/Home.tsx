@@ -375,7 +375,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 md:pb-0">
-      <div className="container mx-auto px-4 py-6 lg:px-8 mt-16 mb-14 lg:mt-16">
+      <div className="container mx-auto px-4 py-6 lg:px-8 mt-32 mb-14 lg:mt-16">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Desktop Sidebar - Como estaba originalmente */}
           <div className="hidden lg:block lg:w-64 space-y-6">
