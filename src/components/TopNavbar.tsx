@@ -185,7 +185,7 @@ export const TopNavbar = () => {
     priceRange.min !== null || priceRange.max !== null;
 
   return (
-    <div className="bg-emerald-700 dark:bg-gray-900">
+    <div className="bg-emerald-700 dark:bg-gray-950">
       <nav className="flex flex-col md:flex-row items-center justify-between px-6 py-3">
         {/* Logo y Botón Toggle */}
         <div className="flex items-center justify-between w-full md:w-auto">
@@ -521,7 +521,7 @@ export const TopNavbar = () => {
       </nav>
 
       {/* Filtros - Solo visible en móvil */}
-      <div className="lg:hidden overflow-x-auto px-6 py-4 bg-amber-50 dark:bg-gray-800 scrollbar-hide">
+      <div className="md:hidden overflow-x-auto px-6 py-4 bg-amber-50 dark:bg-gray-800 scrollbar-hide">
         <div className="flex gap-2 min-w-max">
           {filters.map((filter) => (
             <Button

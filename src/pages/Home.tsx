@@ -83,87 +83,130 @@ export default function Home() {
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTUIcUqIZi-QQVPcAPnpGr06n5gCj5r2qTOsWd-D3QGRWlu6aCKBkLIJBJOmbOEQMMQHP_6qzl1Mkir/pub?gid=1806455741&single=true&output=csv"
   );
 
+  // Función para calcular el conteo considerando solo filtros de precio y búsqueda
+  const getFilteredCountForCategory = (categoryId: string) => {
+    return data.filter((producto) => {
+      const precio = parseFloat(producto.precio) || 0;
+      let matchesCategory = true;
+
+      // Aplicar filtro de categoría específica
+      if (categoryId !== "todos") {
+        if (categoryId === "promociones") {
+          matchesCategory = producto.promocion === "true";
+        } else if (categoryId === "cubensis") {
+          matchesCategory =
+            producto.Tipo?.toLowerCase().includes("cubensis") ||
+            producto.Subcategoria?.toLowerCase().includes("cubensis") ||
+            producto.Hongo?.toLowerCase().includes("cubensis");
+        } else if (categoryId === "medicinal") {
+          matchesCategory =
+            producto.Categoria?.toLowerCase().includes("medicinal") ||
+            producto.Tipo?.toLowerCase().includes("medicinal") ||
+            producto.Subcategoria?.toLowerCase().includes("medicinal");
+        } else if (categoryId === "comestible") {
+          matchesCategory =
+            producto.Categoria?.toLowerCase().includes("comestible") ||
+            producto.Tipo?.toLowerCase().includes("comestible") ||
+            producto.Subcategoria?.toLowerCase().includes("comestible");
+        } else if (categoryId === "hongos") {
+          matchesCategory = producto.Categoria?.toLowerCase() === "hongos";
+        } else if (categoryId === "sustratos") {
+          matchesCategory =
+            producto.Categoria?.toLowerCase().includes("sustrato") ||
+            producto.Tipo?.toLowerCase().includes("sustrato") ||
+            producto.Subcategoria?.toLowerCase().includes("sustrato");
+        } else if (categoryId === "cultivos") {
+          matchesCategory =
+            producto.Categoria?.toLowerCase().includes("cultivo") ||
+            producto.Tipo?.toLowerCase().includes("cultivo") ||
+            producto.Subcategoria?.toLowerCase().includes("cultivo");
+        } else if (categoryId === "granos") {
+          matchesCategory =
+            producto.Categoria?.toLowerCase().includes("grano") ||
+            producto.Tipo?.toLowerCase().includes("grano") ||
+            producto.Subcategoria?.toLowerCase().includes("grano");
+        } else if (categoryId === "kits") {
+          matchesCategory =
+            producto.Categoria?.toLowerCase().includes("kit") ||
+            producto.Tipo?.toLowerCase().includes("kit") ||
+            producto.Subcategoria?.toLowerCase().includes("kit");
+        } else {
+          matchesCategory =
+            producto.Categoria?.toLowerCase() === categoryId.toLowerCase();
+        }
+      }
+
+      // Aplicar filtro de precio
+      let matchesPrice = true;
+      if (priceRange.min !== null) {
+        matchesPrice = precio >= priceRange.min;
+      }
+      if (priceRange.max !== null) {
+        matchesPrice = matchesPrice && precio <= priceRange.max;
+      }
+
+      // Aplicar filtro de búsqueda
+      let matchesSearch = true;
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        matchesSearch =
+          producto.Hongo.toLowerCase().includes(query) ||
+          producto.Tipo.toLowerCase().includes(query) ||
+          producto.Categoria.toLowerCase().includes(query) ||
+          producto.Subcategoria.toLowerCase().includes(query) ||
+          producto.precio.includes(query);
+      }
+
+      return matchesCategory && matchesPrice && matchesSearch;
+    }).length;
+  };
+
   const categories = [
-    { id: "todos", name: "Todos", count: data.length },
+    { id: "todos", name: "Todos", count: getFilteredCountForCategory("todos") },
     {
       id: "promociones",
       name: "Promociones",
-      count: data.filter((p) => p.promocion === "true").length,
+      count: getFilteredCountForCategory("promociones"),
     },
     {
       id: "cubensis",
       name: "Cubensis",
-      count: data.filter(
-        (p) =>
-          p.Tipo?.toLowerCase().includes("cubensis") ||
-          p.Subcategoria?.toLowerCase().includes("cubensis") ||
-          p.Hongo?.toLowerCase().includes("cubensis")
-      ).length,
+      count: getFilteredCountForCategory("cubensis"),
     },
     {
       id: "medicinal",
       name: "Medicinal",
-      count: data.filter(
-        (p) =>
-          p.Categoria?.toLowerCase().includes("medicinal") ||
-          p.Tipo?.toLowerCase().includes("medicinal") ||
-          p.Subcategoria?.toLowerCase().includes("medicinal")
-      ).length,
+      count: getFilteredCountForCategory("medicinal"),
     },
     {
       id: "comestible",
       name: "Comestible",
-      count: data.filter(
-        (p) =>
-          p.Categoria?.toLowerCase().includes("comestible") ||
-          p.Tipo?.toLowerCase().includes("comestible") ||
-          p.Subcategoria?.toLowerCase().includes("comestible")
-      ).length,
+      count: getFilteredCountForCategory("comestible"),
     },
     {
       id: "hongos",
       name: "Hongos",
-      count: data.filter((p) => p.Categoria?.toLowerCase() === "hongos").length,
+      count: getFilteredCountForCategory("hongos"),
     },
     {
       id: "sustratos",
       name: "Sustratos",
-      count: data.filter(
-        (p) =>
-          p.Categoria?.toLowerCase().includes("sustrato") ||
-          p.Tipo?.toLowerCase().includes("sustrato") ||
-          p.Subcategoria?.toLowerCase().includes("sustrato")
-      ).length,
+      count: getFilteredCountForCategory("sustratos"),
     },
     {
       id: "cultivos",
       name: "Cultivos",
-      count: data.filter(
-        (p) =>
-          p.Categoria?.toLowerCase().includes("cultivo") ||
-          p.Tipo?.toLowerCase().includes("cultivo") ||
-          p.Subcategoria?.toLowerCase().includes("cultivo")
-      ).length,
+      count: getFilteredCountForCategory("cultivos"),
     },
     {
       id: "granos",
       name: "Granos",
-      count: data.filter(
-        (p) =>
-          p.Categoria?.toLowerCase().includes("grano") ||
-          p.Tipo?.toLowerCase().includes("grano") ||
-          p.Subcategoria?.toLowerCase().includes("grano")
-      ).length,
+      count: getFilteredCountForCategory("granos"),
     },
     {
       id: "kits",
       name: "Kits",
-      count: data.filter(
-        (p) =>
-          p.Categoria?.toLowerCase().includes("kit") ||
-          p.Tipo?.toLowerCase().includes("kit") ||
-          p.Subcategoria?.toLowerCase().includes("kit")
-      ).length,
+      count: getFilteredCountForCategory("kits"),
     },
   ];
 
@@ -268,6 +311,43 @@ export default function Home() {
     if (activeFilter && activeFilter !== "all") {
       if (activeFilter === "promociones") {
         matchesFilter = producto.promocion === "true";
+      } else if (activeFilter === "cubensis") {
+        matchesFilter =
+          producto.Tipo?.toLowerCase().includes("cubensis") ||
+          producto.Subcategoria?.toLowerCase().includes("cubensis") ||
+          producto.Hongo?.toLowerCase().includes("cubensis");
+      } else if (activeFilter === "medicinal") {
+        matchesFilter =
+          producto.Categoria?.toLowerCase().includes("medicinal") ||
+          producto.Tipo?.toLowerCase().includes("medicinal") ||
+          producto.Subcategoria?.toLowerCase().includes("medicinal");
+      } else if (activeFilter === "comestible") {
+        matchesFilter =
+          producto.Categoria?.toLowerCase().includes("comestible") ||
+          producto.Tipo?.toLowerCase().includes("comestible") ||
+          producto.Subcategoria?.toLowerCase().includes("comestible");
+      } else if (activeFilter === "hongos") {
+        matchesFilter = producto.Categoria?.toLowerCase() === "hongos";
+      } else if (activeFilter === "sustratos") {
+        matchesFilter =
+          producto.Categoria?.toLowerCase().includes("sustrato") ||
+          producto.Tipo?.toLowerCase().includes("sustrato") ||
+          producto.Subcategoria?.toLowerCase().includes("sustrato");
+      } else if (activeFilter === "cultivos") {
+        matchesFilter =
+          producto.Categoria?.toLowerCase().includes("cultivo") ||
+          producto.Tipo?.toLowerCase().includes("cultivo") ||
+          producto.Subcategoria?.toLowerCase().includes("cultivo");
+      } else if (activeFilter === "granos") {
+        matchesFilter =
+          producto.Categoria?.toLowerCase().includes("grano") ||
+          producto.Tipo?.toLowerCase().includes("grano") ||
+          producto.Subcategoria?.toLowerCase().includes("grano");
+      } else if (activeFilter === "kits") {
+        matchesFilter =
+          producto.Categoria?.toLowerCase().includes("kit") ||
+          producto.Tipo?.toLowerCase().includes("kit") ||
+          producto.Subcategoria?.toLowerCase().includes("kit");
       } else {
         matchesFilter =
           producto.Categoria?.toLowerCase() === activeFilter.toLowerCase() ||
