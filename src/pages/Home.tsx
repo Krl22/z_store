@@ -562,7 +562,7 @@ export default function Home() {
               {sortedProducts.map((producto) => (
                 <div
                   key={producto.ID}
-                  onClick={() => openProductDialog(producto)}
+                  onClick={() => handleProductClick(producto)}
                   className="group bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer"
                 >
                   <div className="relative overflow-hidden">
