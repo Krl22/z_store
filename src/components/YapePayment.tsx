@@ -36,7 +36,7 @@ export const YapePayment = () => {
     const itemsList = state.items
       .map(
         (item) =>
-          `- ${item.Hongo} (${item.cantidad}x) - S/.${
+          `- ${item.Nombre} (${item.cantidad}x) - S/.${
             Number(item.precio) * item.cantidad
           }`
       )

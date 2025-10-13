@@ -20,7 +20,8 @@ import { useState } from "react";
 import { ProfileDialog } from "./ProfileDialog";
 
 export const BottomNavbar = () => {
-  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, logout } = useAuth();
+  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, logout } =
+    useAuth();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -254,7 +255,10 @@ export const BottomNavbar = () => {
                 {/* Formulario tradicional */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email-bottom" className="text-sm font-medium">
+                    <Label
+                      htmlFor="email-bottom"
+                      className="text-sm font-medium"
+                    >
                       Correo electrónico
                     </Label>
                     <Input
@@ -266,8 +270,11 @@ export const BottomNavbar = () => {
                       className="py-5 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700"
                       required
                     />
-                    
-                    <Label htmlFor="password-bottom" className="text-sm font-medium">
+
+                    <Label
+                      htmlFor="password-bottom"
+                      className="text-sm font-medium"
+                    >
                       Contraseña
                     </Label>
                     <Input
@@ -284,7 +291,10 @@ export const BottomNavbar = () => {
                     {/* Campo de confirmación de contraseña solo para registro */}
                     {!isLoginMode && (
                       <>
-                        <Label htmlFor="confirmPassword-bottom" className="text-sm font-medium">
+                        <Label
+                          htmlFor="confirmPassword-bottom"
+                          className="text-sm font-medium"
+                        >
                           Confirmar Contraseña
                         </Label>
                         <Input

@@ -13,9 +13,30 @@ import { useEffect, useState, useRef } from "react";
 import { ProfileDialog } from "./ProfileDialog";
 import { useAuth } from "../contexts/auth-context";
 import { userProfileService } from "../services/userProfileService";
+import { useProductDialog } from "../contexts/product-dialog-context";
 
-export const CartDrawerContent = () => {
+type Producto = {
+  ID: string;
+  Tipo: string;
+  Categoria: string;
+  Subcategoria: string;
+  Hongo: string;
+  Nombre: string;
+  stock: string;
+  unidad: string;
+  precio: string;
+  image: string;
+  descripcion: string;
+  promocion?: string;
+};
+
+interface CartDrawerContentProps {
+  // Removido onProductClick - ahora usa el contexto directamente
+}
+
+export const CartDrawerContent = ({}: CartDrawerContentProps = {}) => {
   const { state, dispatch } = useCart();
+  const { openProductDialog } = useProductDialog();
   const [showScrollHint, setShowScrollHint] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
@@ -26,6 +47,65 @@ export const CartDrawerContent = () => {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const { user } = useAuth();
+
+  // Función para convertir CartItem a Producto
+  const convertCartItemToProducto = (item: any): Producto => {
+    // Inferir tipo y categoría basado en el nombre del producto
+    let tipo = "";
+    let categoria = "";
+    let subcategoria = "";
+    let stock = "Disponible";
+    let unidad = "unidad";
+
+    const nombreLower = item.Nombre.toLowerCase();
+    
+    // Inferir tipo
+    if (nombreLower.includes("cubensis")) {
+      tipo = "Cubensis";
+    } else if (nombreLower.includes("oyster") || nombreLower.includes("ostra")) {
+      tipo = "Oyster";
+    } else if (nombreLower.includes("shiitake")) {
+      tipo = "Shiitake";
+    }
+
+    // Inferir categoría y subcategoría
+    if (nombreLower.includes("grano")) {
+      categoria = "Grano";
+      subcategoria = "Colonizado";
+      stock = "30";
+      unidad = "Bolsas";
+    } else if (nombreLower.includes("kit")) {
+      categoria = "Kit";
+      subcategoria = "Completo";
+      stock = "15";
+      unidad = "Kits";
+    } else if (nombreLower.includes("sustrato")) {
+      categoria = "Sustrato";
+      subcategoria = "Esterilizado";
+      stock = "25";
+      unidad = "Bolsas";
+    } else {
+      categoria = "Hongos";
+      subcategoria = "Fresco";
+      stock = "20";
+      unidad = "unidades";
+    }
+
+    return {
+      ID: item.ID,
+      Tipo: tipo,
+      Categoria: categoria,
+      Subcategoria: subcategoria,
+      Hongo: item.Nombre,
+      Nombre: item.Nombre,
+      stock: stock,
+      unidad: unidad,
+      precio: item.precio,
+      image: item.image,
+      descripcion: `Producto de alta calidad. ${item.Nombre} disponible para entrega inmediata.`,
+      promocion: undefined,
+    };
+  };
 
   const [canMakePurchase, setCanMakePurchase] = useState(true);
 
@@ -245,19 +325,42 @@ export const CartDrawerContent = () => {
                   key={item.ID}
                   className="flex items-center gap-3 bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm"
                 >
-                  <img
-                    src={`/${item.image}`}
-                    alt={item.Hongo}
-                    className="w-16 h-16 object-cover rounded-md flex-shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-emerald-800 dark:text-amber-300 text-sm truncate">
-                      {item.Hongo}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      S/{item.precio}
-                    </p>
-                    <div className="flex items-center gap-1 mt-1">
+                  {/* Área clickeable del producto */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0 relative">
+                    <button
+                      className="absolute inset-0 w-full h-full cursor-pointer z-10 bg-transparent hover:bg-black/5 transition-colors"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log("Cart item button clicked:", item);
+                        console.log(
+                          "openProductDialog function:",
+                          openProductDialog
+                        );
+                        openProductDialog(convertCartItemToProducto(item));
+                      }}
+                      aria-label={`Ver detalles de ${item.Nombre}`}
+                    />
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <img
+                        src={`/${item.image}`}
+                        alt={item.Nombre}
+                        className="w-16 h-16 object-cover rounded-md flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-emerald-800 dark:text-amber-300 text-sm truncate">
+                          {item.Nombre}
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          S/{item.precio}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Controles del carrito */}
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="outline"
                         size="sm"
@@ -284,7 +387,7 @@ export const CartDrawerContent = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="ml-auto text-red-500 h-7 w-7 p-0"
+                        className="text-red-500 h-7 w-7 p-0"
                         onClick={() =>
                           dispatch({ type: "REMOVE_ITEM", payload: item.ID })
                         }

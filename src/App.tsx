@@ -16,6 +16,7 @@ import { logEvent } from "firebase/analytics";
 import { Landing } from "./pages/Landing";
 import { FavoritesProvider } from "./contexts/favorites-context";
 import { NotificationProvider } from "./contexts/notification-context";
+import { ProductDialogProvider } from "./contexts/product-dialog-context";
 
 function App() {
   useEffect(() => {
@@ -29,7 +30,8 @@ function App() {
         <CartProvider>
           <FavoritesProvider>
             <NotificationProvider>
-              <Router>
+              <ProductDialogProvider>
+                <Router>
                 <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900">
                   <ConditionalTopNavBar />
                   <Routes>
@@ -40,11 +42,12 @@ function App() {
                   <ConditionalBottomNavBar />
                 </div>
               </Router>
-            </NotificationProvider>
-          </FavoritesProvider>
-        </CartProvider>
-      </AuthProvider>
-    </ThemeProvider>
+            </ProductDialogProvider>
+          </NotificationProvider>
+        </FavoritesProvider>
+      </CartProvider>
+    </AuthProvider>
+  </ThemeProvider>
   );
 }
 

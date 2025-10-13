@@ -12,7 +12,7 @@ import { useAuth } from "./auth-context";
 
 type CartItem = {
   ID: string;
-  Hongo: string;
+  Nombre: string;
   precio: string;
   cantidad: number;
   image: string;

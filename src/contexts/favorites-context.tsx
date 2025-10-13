@@ -11,7 +11,7 @@ import { useAuth } from "./auth-context";
 
 type FavoriteItem = {
   ID: string;
-  Hongo: string;
+  Nombre: string;
   precio: string;
   image: string;
   Tipo: string;
@@ -134,7 +134,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
 
     dispatch({ type: "SET_LOADING", payload: true });
     const favoritesRef = doc(db, "favorites", user.uid);
-  
+
     const unsubscribe = onSnapshot(
       favoritesRef,
       (doc) => {
@@ -158,17 +158,23 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsInitialized(true);
       }
     );
-  
+
     return () => unsubscribe();
   }, [user]); // Only depends on user
-  
+
   // Sync local changes to Firebase with debounce
   useEffect(() => {
-    if (user && isInitialized && !state.isLoading && !state.isSyncing && state.items.length >= 0) {
+    if (
+      user &&
+      isInitialized &&
+      !state.isLoading &&
+      !state.isSyncing &&
+      state.items.length >= 0
+    ) {
       const timeoutId = setTimeout(() => {
         syncFavoritesToFirebase();
       }, 500);
-  
+
       return () => clearTimeout(timeoutId);
     }
   }, [state.items, user, isInitialized, state.isLoading, state.isSyncing]);

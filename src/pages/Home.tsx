@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useFavorites } from "../contexts/favorites-context";
+import { useProductDialog } from "../contexts/product-dialog-context";
 import { Bookmark, Plus } from "lucide-react";
 import { analytics } from "../lib/firebase";
 import { logEvent } from "firebase/analytics";
@@ -19,6 +20,7 @@ type Producto = {
   Categoria: string;
   Subcategoria: string;
   Hongo: string;
+  Nombre: string;
   stock: string;
   unidad: string;
   precio: string;
@@ -36,19 +38,46 @@ type Category = {
 function useGoogleSheet(csvUrl: string) {
   const [data, setData] = useState<Producto[]>([]);
 
+  // Función para parsear CSV correctamente manejando comas dentro de comillas
+  const parseCSV = (text: string) => {
+    const rows: string[][] = [];
+    const lines = text.trim().split("\n");
+
+    for (const line of lines) {
+      const row: string[] = [];
+      let current = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === "," && !inQuotes) {
+          row.push(current.replace(/\r/g, "").replace(/^"|"$/g, ""));
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+
+      // Agregar la última celda
+      row.push(current.replace(/\r/g, "").replace(/^"|"$/g, ""));
+      rows.push(row);
+    }
+
+    return rows;
+  };
+
   useEffect(() => {
     fetch(csvUrl)
       .then((res) => res.text())
       .then((text) => {
-        const rows = text
-          .trim()
-          .split("\n")
-          .map((row) => row.split(","));
-        const headers = rows[0].map((header) => header.replace(/\r/g, ""));
+        const rows = parseCSV(text);
+        const headers = rows[0];
         const json = rows.slice(1).map((row) => {
-          const cleanedRow = row.map((cell) => cell.replace(/\r/g, ""));
           return Object.fromEntries(
-            cleanedRow.map((cell, i) => [headers[i], cell])
+            row.map((cell, i) => [headers[i], cell])
           ) as Producto;
         });
         setData(json);
@@ -63,8 +92,12 @@ export default function Home() {
     useFilter();
   const { dispatch } = useCart();
   const [addedItems, setAddedItems] = useState<{ [key: string]: boolean }>({});
-  const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const {
+    selectedProduct,
+    isDialogOpen,
+    openProductDialog,
+    closeProductDialog,
+  } = useProductDialog();
   const { dispatch: favoritesDispatch, isFavorite } = useFavorites();
 
   const [selectedCategory, setSelectedCategory] = useState("todos");
@@ -83,9 +116,24 @@ export default function Home() {
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTUIcUqIZi-QQVPcAPnpGr06n5gCj5r2qTOsWd-D3QGRWlu6aCKBkLIJBJOmbOEQMMQHP_6qzl1Mkir/pub?gid=1806455741&single=true&output=csv"
   );
 
+  // Función para validar que un producto tenga los campos esenciales (solo precio y nombre)
+  const isValidProduct = (producto: Producto): boolean => {
+    return !!(
+      producto.Nombre &&
+      producto.precio &&
+      producto.Nombre.trim() !== "" &&
+      producto.precio.trim() !== "" &&
+      !isNaN(parseFloat(producto.precio)) &&
+      parseFloat(producto.precio) > 0
+    );
+  };
+
+  // Filtrar solo productos válidos
+  const validProducts = data.filter(isValidProduct);
+
   // Función para calcular el conteo considerando solo filtros de precio y búsqueda
   const getFilteredCountForCategory = (categoryId: string) => {
-    return data.filter((producto) => {
+    return validProducts.filter((producto) => {
       const precio = parseFloat(producto.precio) || 0;
       let matchesCategory = true;
 
@@ -97,7 +145,7 @@ export default function Home() {
           matchesCategory =
             producto.Tipo?.toLowerCase().includes("cubensis") ||
             producto.Subcategoria?.toLowerCase().includes("cubensis") ||
-            producto.Hongo?.toLowerCase().includes("cubensis");
+            producto.Nombre?.toLowerCase().includes("cubensis");
         } else if (categoryId === "medicinal") {
           matchesCategory =
             producto.Categoria?.toLowerCase().includes("medicinal") ||
@@ -150,7 +198,7 @@ export default function Home() {
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         matchesSearch =
-          producto.Hongo.toLowerCase().includes(query) ||
+          producto.Nombre.toLowerCase().includes(query) ||
           producto.Tipo.toLowerCase().includes(query) ||
           producto.Categoria.toLowerCase().includes(query) ||
           producto.Subcategoria.toLowerCase().includes(query) ||
@@ -222,7 +270,7 @@ export default function Home() {
         items: [
           {
             item_id: producto.ID,
-            item_name: producto.Hongo,
+            item_name: producto.Nombre,
             item_category: producto.Categoria,
           },
         ],
@@ -232,7 +280,7 @@ export default function Home() {
         type: "ADD_FAVORITE",
         payload: {
           ID: producto.ID,
-          Hongo: producto.Hongo,
+          Nombre: producto.Nombre,
           precio: producto.precio,
           image: producto.image,
           Tipo: producto.Tipo,
@@ -248,7 +296,7 @@ export default function Home() {
         items: [
           {
             item_id: producto.ID,
-            item_name: producto.Hongo,
+            item_name: producto.Nombre,
             item_category: producto.Categoria,
           },
         ],
@@ -256,7 +304,7 @@ export default function Home() {
     }
   };
 
-  const filteredProducts = data.filter((producto) => {
+  const filteredProducts = validProducts.filter((producto) => {
     const precio = parseFloat(producto.precio) || 0;
     let matchesFilter = true;
     let matchesCategory = true;
@@ -269,7 +317,7 @@ export default function Home() {
         matchesCategory =
           producto.Tipo?.toLowerCase().includes("cubensis") ||
           producto.Subcategoria?.toLowerCase().includes("cubensis") ||
-          producto.Hongo?.toLowerCase().includes("cubensis");
+          producto.Nombre?.toLowerCase().includes("cubensis");
       } else if (selectedCategory === "medicinal") {
         matchesCategory =
           producto.Categoria?.toLowerCase().includes("medicinal") ||
@@ -315,7 +363,7 @@ export default function Home() {
         matchesFilter =
           producto.Tipo?.toLowerCase().includes("cubensis") ||
           producto.Subcategoria?.toLowerCase().includes("cubensis") ||
-          producto.Hongo?.toLowerCase().includes("cubensis");
+          producto.Nombre?.toLowerCase().includes("cubensis");
       } else if (activeFilter === "medicinal") {
         matchesFilter =
           producto.Categoria?.toLowerCase().includes("medicinal") ||
@@ -368,7 +416,7 @@ export default function Home() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       matchesSearch =
-        producto.Hongo.toLowerCase().includes(query) ||
+        producto.Nombre.toLowerCase().includes(query) ||
         producto.Tipo.toLowerCase().includes(query) ||
         producto.Categoria.toLowerCase().includes(query) ||
         producto.Subcategoria.toLowerCase().includes(query) ||
@@ -386,7 +434,7 @@ export default function Home() {
       case "price-high":
         return parseFloat(b.precio) - parseFloat(a.precio);
       case "name":
-        return a.Hongo.localeCompare(b.Hongo);
+        return a.Nombre.localeCompare(b.Nombre);
       case "featured":
       default:
         return 0; // Keep original order
@@ -399,7 +447,7 @@ export default function Home() {
       type: "ADD_ITEM",
       payload: {
         ID: producto.ID,
-        Hongo: producto.Hongo,
+        Nombre: producto.Nombre,
         precio: producto.precio,
         image: producto.image,
         cantidad: 1,
@@ -413,7 +461,7 @@ export default function Home() {
       items: [
         {
           item_id: producto.ID,
-          item_name: producto.Hongo,
+          item_name: producto.Nombre,
           item_category: producto.Categoria,
           item_variant: producto.Tipo,
           price: parseFloat(producto.precio),
@@ -429,8 +477,7 @@ export default function Home() {
   };
   // Agregar evento cuando ven detalles del producto:
   const handleProductClick = (producto: Producto) => {
-    setSelectedProduct(producto);
-    setIsDialogOpen(true);
+    openProductDialog(producto);
 
     // 📊 Analytics: Usuario vio detalles del producto
     logEvent(analytics, "view_item", {
@@ -439,18 +486,12 @@ export default function Home() {
       items: [
         {
           item_id: producto.ID,
-          item_name: producto.Hongo,
+          item_name: producto.Nombre,
           item_category: producto.Categoria,
           item_variant: producto.Tipo,
         },
       ],
     });
-  };
-
-  const openProductDialog = (producto: Producto) => {
-    setSelectedProduct(producto);
-    setIsDialogOpen(true);
-    handleProductClick(producto);
   };
 
   return (
@@ -598,22 +639,34 @@ export default function Home() {
       </div>
 
       {/* Product Dialog - Enhanced */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => !open && closeProductDialog()}
+      >
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white via-emerald-50/30 to-amber-50/20 dark:from-gray-900 dark:via-emerald-950/30 dark:to-amber-950/20 border-2 border-emerald-200/50 dark:border-emerald-800/50 shadow-2xl rounded-2xl backdrop-blur-sm">
           <DialogHeader className="pb-6 border-b border-emerald-100 dark:border-emerald-800/50">
             <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-emerald-700 to-emerald-600 dark:from-amber-400 dark:to-amber-300 bg-clip-text text-transparent">
               {selectedProduct?.Hongo}
             </DialogTitle>
+            <div className="mt-2">
+              <p className="text-sm italic text-gray-600 dark:text-gray-400 font-medium">
+                <span className="text-emerald-600 dark:text-amber-400">
+                  Nombre científico:
+                </span>{" "}
+                {selectedProduct?.Nombre}
+              </p>
+            </div>
           </DialogHeader>
 
           {selectedProduct && (
-            <div className="grid gap-6 py-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="relative pb-[100%] rounded-2xl overflow-hidden shadow-lg ring-1 ring-emerald-200/50 dark:ring-emerald-800/50">
+            <div className="space-y-6 py-6">
+              {/* Imagen centrada y cuadrada en la parte superior */}
+              <div className="flex justify-center">
+                <div className="relative w-80 h-80 rounded-2xl overflow-hidden shadow-lg ring-1 ring-emerald-200/50 dark:ring-emerald-800/50">
                   <img
                     src={`/${selectedProduct.image}`}
                     alt={selectedProduct.Hongo}
-                    className="absolute w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                   />
                   {/* Botón de guardados en el diálogo */}
                   <Button
@@ -640,101 +693,102 @@ export default function Home() {
                     </div>
                   )}
                 </div>
+              </div>
 
-                <div className="space-y-6">
-                  <div className="bg-white/60 dark:bg-gray-800/60 p-4 rounded-xl shadow-sm border border-emerald-100 dark:border-emerald-800/30">
-                    <h3 className="font-semibold text-lg text-emerald-800 dark:text-amber-300 mb-2 flex items-center">
-                      <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
-                      Detalles
-                    </h3>
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        <span className="font-medium">Tipo:</span>{" "}
-                        {selectedProduct.Tipo}
-                      </p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        <span className="font-medium">Categoría:</span>{" "}
-                        {selectedProduct.Categoria}
-                      </p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        <span className="font-medium">Subcategoría:</span>{" "}
-                        {selectedProduct.Subcategoria}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-white/60 dark:bg-gray-800/60 p-4 rounded-xl shadow-sm border border-emerald-100 dark:border-emerald-800/30">
-                    <h3 className="font-semibold text-lg text-emerald-800 dark:text-amber-300 mb-2 flex items-center">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                      Disponibilidad
-                    </h3>
+              {/* Contenedores de detalles en 2 columnas en desktop, 1 columna en móvil */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white/60 dark:bg-gray-800/60 p-4 rounded-xl shadow-sm border border-emerald-100 dark:border-emerald-800/30">
+                  <h3 className="font-semibold text-lg text-emerald-800 dark:text-amber-300 mb-2 flex items-center">
+                    <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
+                    Detalles
+                  </h3>
+                  <div className="space-y-1">
                     <p className="text-sm text-gray-700 dark:text-gray-300">
-                      <span className="font-bold text-green-600 dark:text-green-400">
-                        {selectedProduct.stock}
-                      </span>{" "}
-                      {selectedProduct.unidad} disponibles
+                      <span className="font-medium">Tipo:</span>{" "}
+                      {selectedProduct.Tipo}
+                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      <span className="font-medium">Categoría:</span>{" "}
+                      {selectedProduct.Categoria}
+                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      <span className="font-medium">Subcategoría:</span>{" "}
+                      {selectedProduct.Subcategoria}
                     </p>
                   </div>
+                </div>
 
-                  <div className="bg-white/60 dark:bg-gray-800/60 p-4 rounded-xl shadow-sm border border-emerald-100 dark:border-emerald-800/30">
-                    <h3 className="font-semibold text-lg text-emerald-800 dark:text-amber-300 mb-2 flex items-center">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                      Descripción
-                    </h3>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                <div className="bg-white/60 dark:bg-gray-800/60 p-4 rounded-xl shadow-sm border border-emerald-100 dark:border-emerald-800/30">
+                  <h3 className="font-semibold text-lg text-emerald-800 dark:text-amber-300 mb-2 flex items-center">
+                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                    Disponibilidad
+                  </h3>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="font-bold text-green-600 dark:text-green-400">
+                      {selectedProduct.stock}
+                    </span>{" "}
+                    {selectedProduct.unidad} disponibles
+                  </p>
+                </div>
+
+                <div className="bg-white/60 dark:bg-gray-800/60 p-4 rounded-xl shadow-sm border border-emerald-100 dark:border-emerald-800/30">
+                  <h3 className="font-semibold text-lg text-emerald-800 dark:text-amber-300 mb-2 flex items-center">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                    Descripción
+                  </h3>
+                  <div className="max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-300 dark:scrollbar-thumb-amber-400 scrollbar-track-gray-100 dark:scrollbar-track-gray-700">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed pr-2">
                       {selectedProduct.descripcion}
                     </p>
                   </div>
+                </div>
 
-                  <div className="bg-white/60 dark:bg-gray-800/60 p-4 rounded-xl shadow-sm border border-emerald-100 dark:border-emerald-800/30">
-                    <h3 className="font-semibold text-lg text-emerald-800 dark:text-amber-300 mb-3 flex items-center">
-                      <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
-                      Precio
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-emerald-700 dark:text-amber-400">
-                          S/{selectedProduct.precio}
-                        </p>
-                      </div>
+                <div className="bg-white/60 dark:bg-gray-800/60 p-4 rounded-xl shadow-sm border border-emerald-100 dark:border-emerald-800/30">
+                  <h3 className="font-semibold text-lg text-emerald-800 dark:text-amber-300 mb-3 flex items-center">
+                    <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
+                    Precio
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-emerald-700 dark:text-amber-400">
+                        S/{selectedProduct.precio}
+                      </p>
+                    </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <Button
-                          onClick={(e) =>
-                            handleAddToFavorites(selectedProduct, e)
-                          }
-                          variant="outline"
-                          size="lg"
-                          className={`h-11 transition-all duration-200 ${
-                            isFavorite(selectedProduct.ID)
-                              ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300"
-                              : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        onClick={(e) =>
+                          handleAddToFavorites(selectedProduct, e)
+                        }
+                        variant="outline"
+                        size="lg"
+                        className={`h-11 transition-all duration-200 ${
+                          isFavorite(selectedProduct.ID)
+                            ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300"
+                            : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                        }`}
+                      >
+                        <Bookmark
+                          className={`h-4 w-4 mr-2 ${
+                            isFavorite(selectedProduct.ID) ? "fill-current" : ""
                           }`}
-                        >
-                          <Bookmark
-                            className={`h-4 w-4 mr-2 ${
-                              isFavorite(selectedProduct.ID)
-                                ? "fill-current"
-                                : ""
-                            }`}
-                          />
-                          {isFavorite(selectedProduct.ID)
-                            ? "Guardado"
-                            : "Guardar"}
-                        </Button>
+                        />
+                        {isFavorite(selectedProduct.ID)
+                          ? "Guardado"
+                          : "Guardar"}
+                      </Button>
 
-                        <Button
-                          onClick={(e) => {
-                            handleAddToCart(selectedProduct, e);
-                            setIsDialogOpen(false);
-                          }}
-                          size="lg"
-                          className="h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors duration-200"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Añadir
-                        </Button>
-                      </div>
+                      <Button
+                        onClick={(e) => {
+                          handleAddToCart(selectedProduct, e);
+                          closeProductDialog();
+                        }}
+                        size="lg"
+                        className="h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors duration-200"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Añadir
+                      </Button>
                     </div>
                   </div>
                 </div>
