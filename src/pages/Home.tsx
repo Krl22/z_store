@@ -590,7 +590,7 @@ export default function Home() {
                         }`}
                       />
                     </button>
-                    <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute bottom-3 right-3 z-10 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                       <Button
                         size="sm"
                         onClick={(e) => handleAddToCart(producto, e)}
@@ -617,7 +617,7 @@ export default function Home() {
 
                   <div className="p-4">
                     <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                      {producto.Hongo}
+                      {producto.Nombre || producto.Hongo}
                     </h3>
 
                     <div className="flex items-center justify-between">
