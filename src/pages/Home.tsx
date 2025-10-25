@@ -590,7 +590,7 @@ export default function Home() {
                         }`}
                       />
                     </button>
-                    <div className="absolute bottom-3 right-3 z-10 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                    <div className="absolute bottom-3 right-3 z-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                       <Button
                         size="sm"
                         onClick={(e) => handleAddToCart(producto, e)}
