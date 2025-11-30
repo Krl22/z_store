@@ -6,6 +6,7 @@ import {
 } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 import { getMessaging } from "firebase/messaging";
 
 const firebaseConfig = {
@@ -25,6 +26,7 @@ export const db = getFirestore(app);
 export const analytics = getAnalytics(app);
 export const googleProvider = new GoogleAuthProvider();
 export const facebookProvider = new FacebookAuthProvider();
+export const storage = getStorage(app);
 
 // Initialize Firebase Cloud Messaging
 export const messaging = getMessaging(app);
