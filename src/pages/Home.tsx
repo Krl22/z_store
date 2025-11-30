@@ -11,8 +11,9 @@ import { Button } from "@/components/ui/button";
 import { useFavorites } from "../contexts/favorites-context";
 import { useProductDialog } from "../contexts/product-dialog-context";
 import { Bookmark, Plus } from "lucide-react";
-import { analytics } from "../lib/firebase";
+import { analytics, db } from "../lib/firebase";
 import { logEvent } from "firebase/analytics";
+import { collection, getDocs } from "firebase/firestore";
 
 type Producto = {
   ID: string;
@@ -35,54 +36,49 @@ type Category = {
   count: number;
 };
 
-function useGoogleSheet(csvUrl: string) {
+// Firestore product document shape
+type FSProduct = {
+  tipo?: string;
+  categoria?: string;
+  subcategoria?: string;
+  hongo?: string;
+  nombre?: string;
+  stock?: number | string;
+  unidad?: string;
+  precio?: number | string;
+  image?: string;
+  descripcion?: string;
+  promocion?: boolean | string;
+};
+
+function useFirestoreProducts() {
   const [data, setData] = useState<Producto[]>([]);
 
-  // Función para parsear CSV correctamente manejando comas dentro de comillas
-  const parseCSV = (text: string) => {
-    const rows: string[][] = [];
-    const lines = text.trim().split("\n");
-
-    for (const line of lines) {
-      const row: string[] = [];
-      let current = "";
-      let inQuotes = false;
-
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === "," && !inQuotes) {
-          row.push(current.replace(/\r/g, "").replace(/^"|"$/g, ""));
-          current = "";
-        } else {
-          current += char;
-        }
-      }
-
-      // Agregar la última celda
-      row.push(current.replace(/\r/g, "").replace(/^"|"$/g, ""));
-      rows.push(row);
-    }
-
-    return rows;
-  };
-
   useEffect(() => {
-    fetch(csvUrl)
-      .then((res) => res.text())
-      .then((text) => {
-        const rows = parseCSV(text);
-        const headers = rows[0];
-        const json = rows.slice(1).map((row) => {
-          return Object.fromEntries(
-            row.map((cell, i) => [headers[i], cell])
-          ) as Producto;
-        });
-        setData(json);
+    const load = async () => {
+      const snap = await getDocs(collection(db, "products"));
+      const json: Producto[] = snap.docs.map((d) => {
+        const p = d.data() as FSProduct;
+        return {
+          ID: d.id,
+          Tipo: String(p.tipo ?? ""),
+          Categoria: String(p.categoria ?? ""),
+          Subcategoria: String(p.subcategoria ?? ""),
+          Hongo: String(p.hongo ?? ""),
+          Nombre: String(p.nombre ?? ""),
+          stock: String(p.stock ?? ""),
+          unidad: String(p.unidad ?? ""),
+          precio: String(p.precio ?? ""),
+          image: String(p.image ?? ""),
+          descripcion: String(p.descripcion ?? ""),
+          promocion:
+            p.promocion !== undefined ? String(p.promocion) : undefined,
+        };
       });
-  }, [csvUrl]);
+      setData(json);
+    };
+    load();
+  }, []);
 
   return data;
 }
@@ -112,9 +108,7 @@ export default function Home() {
     }
   }, [activeFilter]);
 
-  const data = useGoogleSheet(
-    "https://docs.google.com/spreadsheets/d/e/2PACX-1vTUIcUqIZi-QQVPcAPnpGr06n5gCj5r2qTOsWd-D3QGRWlu6aCKBkLIJBJOmbOEQMMQHP_6qzl1Mkir/pub?gid=1806455741&single=true&output=csv"
-  );
+  const data = useFirestoreProducts();
 
   // Función para validar que un producto tenga los campos esenciales (solo precio y nombre)
   const isValidProduct = (producto: Producto): boolean => {
@@ -567,7 +561,7 @@ export default function Home() {
                 >
                   <div className="relative overflow-hidden">
                     <img
-                      src={`/${producto.image}`}
+                      src={producto.image}
                       alt={producto.Hongo}
                       className="w-full h-48 sm:h-56 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -664,7 +658,7 @@ export default function Home() {
               <div className="flex justify-center">
                 <div className="relative w-80 h-80 rounded-2xl overflow-hidden shadow-lg ring-1 ring-emerald-200/50 dark:ring-emerald-800/50">
                   <img
-                    src={`/${selectedProduct.image}`}
+                    src={selectedProduct.image}
                     alt={selectedProduct.Hongo}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                   />

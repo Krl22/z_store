@@ -343,7 +343,7 @@ export const CartDrawerContent = ({}: CartDrawerContentProps = {}) => {
                     />
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <img
-                        src={`/${item.image}`}
+                        src={item.image}
                         alt={item.Nombre}
                         className="w-16 h-16 object-cover rounded-md flex-shrink-0"
                       />

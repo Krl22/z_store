@@ -42,6 +42,9 @@ import {
 import { Bookmark, LogOut } from "lucide-react";
 import { NotificationSettings } from "./NotificationSettings";
 import { ProfileDialog } from "./ProfileDialog";
+import { Link, useNavigate } from "react-router-dom";
+import { db } from "../lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 export const TopNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -146,6 +149,8 @@ export const TopNavbar = () => {
   const { activeFilter, setActiveFilter, setSearchQuery, priceRange } =
     useFilter();
   const [localSearchQuery, setLocalSearchQuery] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -154,6 +159,18 @@ export const TopNavbar = () => {
 
     return () => clearTimeout(timer);
   }, [localSearchQuery, setSearchQuery]);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (user?.email) {
+        const snap = await getDoc(doc(db, "admins", user.email.toLowerCase()));
+        setIsAdmin(snap.exists());
+      } else {
+        setIsAdmin(false);
+      }
+    };
+    checkAdmin();
+  }, [user]);
 
   const handleSearch = () => {
     setSearchQuery(localSearchQuery.toLowerCase());
@@ -189,7 +206,7 @@ export const TopNavbar = () => {
       <nav className="flex flex-col md:flex-row items-center justify-between px-6 py-3">
         {/* Logo y Botón Toggle */}
         <div className="flex items-center justify-between w-full md:w-auto">
-          <div className="flex items-center gap-2">
+          <Link to="/home" className="flex items-center gap-2">
             <img
               src="/pwa-512x512.png"
               alt="Logo Zeta Dorada"
@@ -198,7 +215,7 @@ export const TopNavbar = () => {
             <div className="text-2xl font-bold text-amber-300 dark:text-amber-300 ">
               Zeta Dorada
             </div>
-          </div>
+          </Link>
           <div className="md:hidden">
             <ModeToggle />
           </div>
@@ -279,6 +296,16 @@ export const TopNavbar = () => {
                   <User className="mr-2 h-4 w-4" />
                   <span className="text-sm">Mi Perfil</span>
                 </DropdownMenuItem>
+
+                {isAdmin && (
+                  <DropdownMenuItem
+                    onClick={() => navigate("/admin")}
+                    className="px-2 py-2"
+                  >
+                    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 00-7 7v1H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2v-6a2 2 0 00-2-2h-1V9a7 7 0 00-7-7zm-5 8V9a5 5 0 0110 0v1H7zm-3 3h16v6H4v-6z"/></svg>
+                    <span className="text-sm">Panel Admin</span>
+                  </DropdownMenuItem>
+                )}
 
                 <Drawer>
                   <DrawerTrigger asChild>

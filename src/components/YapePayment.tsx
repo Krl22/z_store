@@ -1,25 +1,29 @@
 import { useCart } from "../contexts/cart-context";
 import { useAuth } from "../contexts/auth-context";
-import {
-  addSaleToSheet,
-  generateSaleId,
-  getClientsFromSheet,
-} from "../services/googleSheetsService";
 import { useState } from "react";
 import { Button } from "./ui/button";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, UploadCloud } from "lucide-react";
 import {
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
 } from "./ui/dialog";
+import { Input } from "./ui/input";
+import { db, storage } from "../lib/firebase";
+import { collection, doc, setDoc } from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { userProfileService } from "../services/userProfileService";
 
 export const YapePayment = () => {
-  const { state } = useCart();
+  const { state, dispatch } = useCart();
   const yapeNumber = "901997567";
   const [copied, setCopied] = useState(false);
   const { user } = useAuth();
+  const [captureFile, setCaptureFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const handleCopyNumber = async () => {
     try {
@@ -31,63 +35,57 @@ export const YapePayment = () => {
     }
   };
 
-  // Función para generar el mensaje
-  const generateMessage = () => {
-    const itemsList = state.items
-      .map(
-        (item) =>
-          `- ${item.Nombre} (${item.cantidad}x) - S/.${
-            Number(item.precio) * item.cantidad
-          }`
-      )
-      .join("\n");
-
-    return `¡Hola! Quiero realizar la siguiente compra:\n\n${itemsList}\n\nTotal: S/.${state.total}\n\nAdjunto captura de mi pago por Yape.`;
-  };
-
-  // Función para abrir WhatsApp
-  const openWhatsApp = async () => {
-    await handlePaymentConfirmation(); // Cambiar aquí
-    const message = encodeURIComponent(generateMessage());
-    const whatsappNumber = "51928817018";
-    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
-  };
-
-  const openMessenger = async () => {
-    await handlePaymentConfirmation(); // Cambiar aquí
-    const message = encodeURIComponent(generateMessage());
-    const pageId = "100090226974534";
-    window.open(`https://m.me/${pageId}?text=${message}`, "_blank");
-  };
-
-  const handlePaymentConfirmation = async () => {
-    if (!user) return;
+  const handleSubmitOrder = async () => {
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    if (!user) {
+      setErrorMsg("Debes iniciar sesión para enviar tu pedido");
+      return;
+    }
+    if (!captureFile) {
+      setErrorMsg("Sube la captura del pago para continuar");
+      return;
+    }
 
     try {
-      // Obtener el ID de 8 dígitos del cliente desde Google Sheets
-      const clients = await getClientsFromSheet();
-      const clientData = clients.find(
-        (client: any) => client.firebase_uid === user.uid
-      );
-      const clientId = clientData ? clientData.ID : user.uid; // Fallback al firebase_uid si no se encuentra
+      setSubmitting(true);
+      // Subir captura a Storage
+      const orderId = `${user.uid}-${Date.now()}`;
+      const storageRef = ref(storage, `orders/${orderId}.jpg`);
+      const uploadRes = await uploadBytes(storageRef, captureFile);
+      const captureUrl = await getDownloadURL(uploadRes.ref);
 
-      const saleId = generateSaleId();
+      // Crear documento de orden en Firestore
+      const orderRef = doc(collection(db, "orders"));
+      const profile = await userProfileService.getUserProfile(user.uid);
+      await setDoc(orderRef, {
+        orderId,
+        userId: user.uid,
+        userEmail: user.email ?? null,
+        items: state.items,
+        total: state.total,
+        paymentMethod: "yape",
+        captureUrl,
+        profile: profile
+          ? {
+              nombre: profile.nombre,
+              apellido: profile.apellido,
+              provincia: profile.provincia,
+              telefono: profile.telefono,
+            }
+          : null,
+        status: "pending_review",
+        createdAt: Date.now(),
+      });
 
-      for (const item of state.items) {
-        await addSaleToSheet({
-          id: saleId,
-          cliente: clientId, // Usar el ID de 8 dígitos
-          producto: item.ID, // Usar el código del producto en lugar de item.Hongo
-          cantidad: item.cantidad,
-          unidad: "unidad",
-          precio: Number(item.precio),
-          total: Number(item.precio) * item.cantidad,
-          fecha: new Date().toISOString().split("T")[0],
-          estado: "Pendiente",
-        });
-      }
-    } catch (error) {
-      console.error("Error al procesar el pago:", error);
+      setSuccessMsg("Tu pedido fue enviado. Revisaremos tu pago pronto.");
+      // Opcional: limpiar carrito local
+      dispatch({ type: "CLEAR_CART" });
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Ocurrió un error al enviar tu pedido. Intenta nuevamente.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -143,22 +141,24 @@ export const YapePayment = () => {
             2. Toma una captura de la transferencia
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            3. Envíanos la captura por WhatsApp o Facebook Messenger
+            3. Sube la captura aquí y envía tu pedido
           </p>
         </div>
 
-        <div className="flex gap-4 w-full">
-          <Button
-            onClick={openWhatsApp}
-            className="flex-1 bg-green-500 hover:bg-green-600 text-white"
-          >
-            WhatsApp
-          </Button>
-          <Button
-            onClick={openMessenger}
-            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
-          >
-            Messenger
+        <div className="w-full space-y-3">
+          <div className="space-y-2">
+            <Input type="file" accept="image/*" onChange={(e) => setCaptureFile(e.target.files?.[0] || null)} />
+            {captureFile && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <UploadCloud className="h-4 w-4" />
+                <span>{captureFile.name}</span>
+              </div>
+            )}
+          </div>
+          {errorMsg && <p className="text-sm text-red-600">{errorMsg}</p>}
+          {successMsg && <p className="text-sm text-green-600">{successMsg}</p>}
+          <Button onClick={handleSubmitOrder} disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+            {submitting ? "Enviando pedido..." : "Enviar pedido"}
           </Button>
         </div>
       </div>

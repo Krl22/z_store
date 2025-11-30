@@ -17,6 +17,8 @@ import { Landing } from "./pages/Landing";
 import { FavoritesProvider } from "./contexts/favorites-context";
 import { NotificationProvider } from "./contexts/notification-context";
 import { ProductDialogProvider } from "./contexts/product-dialog-context";
+import { Admin } from "./pages/Admin";
+import { RequireAdmin } from "./components/RequireAdmin";
 
 function App() {
   useEffect(() => {
@@ -38,6 +40,7 @@ function App() {
                     <Route path="/" element={<Landing />} />
                     <Route path="/home" element={<Home />} />
                     <Route path="/tienda" element={<Home />} />
+                    <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
                   </Routes>
                   <ConditionalBottomNavBar />
                 </div>
