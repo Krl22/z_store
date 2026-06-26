@@ -2,8 +2,7 @@
 "use client";
 
 import { createContext, useContext, useState } from "react";
-import { analytics } from "../lib/firebase";
-import { logEvent } from "firebase/analytics";
+import { trackEvent } from "../lib/firebase";
 
 type PriceRange = {
   min: number | null;
@@ -43,7 +42,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     setActiveFilterState(filter);
     
     // Log del evento de filtro aplicado
-    logEvent(analytics, "filter_applied", {
+    trackEvent("filter_applied", {
       filter_type: "category",
       filter_value: filter,
       previous_filter: activeFilter
@@ -56,7 +55,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     
     // Log del evento de búsqueda
     if (query.trim()) {
-      logEvent(analytics, "search", {
+      trackEvent("search", {
         search_term: query,
         search_type: "product_search"
       });
@@ -68,7 +67,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     setPriceRangeState(range);
     
     // Log del evento de filtro de precio
-    logEvent(analytics, "filter_applied", {
+    trackEvent("filter_applied", {
       filter_type: "price_range",
       filter_value: `${range.min || 0}-${range.max || 'unlimited'}`,
       min_price: range.min,
@@ -86,7 +85,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     setPriceRangeState({ min: null, max: null });
     
     // 📊 Analytics: Log del reset de filtros
-    logEvent(analytics, "filters_reset", {
+    trackEvent("filters_reset", {
       previous_filter: previousFilter,
       previous_search: previousSearch,
       previous_price_range: `${previousPriceRange.min || 0}-${previousPriceRange.max || 'unlimited'}`

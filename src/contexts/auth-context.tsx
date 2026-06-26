@@ -18,6 +18,7 @@ import {
   PhoneAuthProvider,
   RecaptchaVerifier,
 } from "firebase/auth";
+import { FirebaseError } from "firebase/app";
 import { auth, googleProvider, facebookProvider } from "../lib/firebase";
 
 type AuthContextType = {
@@ -95,16 +96,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await signOut(auth);
         throw new Error("email-not-verified");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error signing in with email:", error);
 
-      if (error.message === "email-not-verified") {
+      if (error instanceof Error && error.message === "email-not-verified") {
         throw new Error(
           "Por favor verifica tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada."
         );
       }
 
-      throw error;
+      throw error instanceof Error
+        ? error
+        : new Error("No se pudo iniciar sesion.");
     }
   };
 
@@ -132,19 +135,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         success: true,
         message: `¡Cuenta creada exitosamente! Hemos enviado un correo de verificación a ${email}. Por favor, revisa tu bandeja de entrada y haz clic en el enlace para activar tu cuenta.`,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error signing up with email:", error);
 
       // Manejar errores específicos
       let errorMessage = "Error al crear la cuenta. Inténtalo de nuevo.";
+      const errorCode = error instanceof FirebaseError ? error.code : "";
 
-      if (error.code === "auth/email-already-in-use") {
+      if (errorCode === "auth/email-already-in-use") {
         errorMessage =
           "Este correo electrónico ya está registrado. Intenta iniciar sesión.";
-      } else if (error.code === "auth/weak-password") {
+      } else if (errorCode === "auth/weak-password") {
         errorMessage =
           "La contraseña es muy débil. Debe tener al menos 6 caracteres.";
-      } else if (error.code === "auth/invalid-email") {
+      } else if (errorCode === "auth/invalid-email") {
         errorMessage = "El correo electrónico no es válido.";
       }
 

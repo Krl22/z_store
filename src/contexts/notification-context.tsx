@@ -47,7 +47,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       const permission = await Notification.requestPermission();
       setPermission(permission);
 
-      if (permission === "granted") {
+      if (permission === "granted" && messaging) {
         const currentToken = await getToken(messaging, { vapidKey });
         if (currentToken) {
           setToken(currentToken);
@@ -108,6 +108,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   // Initialize
   useEffect(() => {
     setPermission(Notification.permission);
+
+    if (!messaging) return;
 
     // Listen for foreground messages
     const unsubscribe = onMessage(messaging, (payload) => {

@@ -11,8 +11,7 @@ import Home from "./pages/Home";
 import { CartProvider } from "./contexts/cart-context";
 import { AuthProvider } from "./contexts/auth-context";
 import { useEffect } from "react";
-import { analytics } from "./lib/firebase";
-import { logEvent } from "firebase/analytics";
+import { trackEvent } from "./lib/firebase";
 import { Landing } from "./pages/Landing";
 import { FavoritesProvider } from "./contexts/favorites-context";
 import { NotificationProvider } from "./contexts/notification-context";
@@ -23,11 +22,11 @@ import { RequireAdmin } from "./components/RequireAdmin";
 function App() {
   useEffect(() => {
     // Track initial page view
-    logEvent(analytics, "page_view");
+    trackEvent("page_view");
   }, []);
   
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <AuthProvider>
         <CartProvider>
           <FavoritesProvider>
@@ -38,8 +37,11 @@ function App() {
                   <ConditionalTopNavBar />
                   <Routes>
                     <Route path="/" element={<Landing />} />
-                    <Route path="/home" element={<Home />} />
+                    <Route path="/home" element={<Landing />} />
                     <Route path="/tienda" element={<Home />} />
+                    <Route path="/catalogo" element={<Home />} />
+                    <Route path="/productos" element={<Home />} />
+                    <Route path="/producto/:slug" element={<Home />} />
                     <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
                   </Routes>
                   <ConditionalBottomNavBar />
@@ -68,7 +70,7 @@ const ConditionalTopNavBar = () => {
 
 const ConditionalBottomNavBar = () => {
   const location = useLocation();
-  const hiddenRoutes = ["/"];
+  const hiddenRoutes = ["/", "/admin"];
   return !hiddenRoutes.includes(location.pathname) ? <BottomNavbar /> : null;
 };
 

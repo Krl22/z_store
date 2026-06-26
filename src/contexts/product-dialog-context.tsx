@@ -41,7 +41,6 @@ export const ProductDialogProvider: React.FC<ProductDialogProviderProps> = ({ ch
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const openProductDialog = (producto: Producto) => {
-    console.log('openProductDialog called with:', producto);
     setSelectedProduct(producto);
     setIsDialogOpen(true);
   };

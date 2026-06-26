@@ -21,12 +21,17 @@ type Producto = {
   promocion?: string;
 };
 
-interface FavoritesDrawerContentProps {
-  // Removido onProductClick - ahora usa el contexto directamente
-}
+type FavoriteDrawerItem = {
+  ID: string;
+  Nombre: string;
+  precio: string;
+  image: string;
+  Tipo: string;
+  Categoria: string;
+  descripcion: string;
+};
 
-export const FavoritesDrawerContent =
-  ({}: FavoritesDrawerContentProps = {}) => {
+export const FavoritesDrawerContent = () => {
     const { state, dispatch } = useFavorites();
     const { dispatch: cartDispatch } = useCart();
     const { openProductDialog } = useProductDialog();
@@ -35,7 +40,7 @@ export const FavoritesDrawerContent =
     );
 
     // Función para convertir FavoriteItem a Producto
-    const convertFavoriteToProducto = (item: any): Producto => {
+    const convertFavoriteToProducto = (item: FavoriteDrawerItem): Producto => {
       // Inferir subcategoría basada en el tipo y categoría
       let subcategoria = "";
       if (item.Tipo && item.Categoria) {
@@ -84,7 +89,7 @@ export const FavoritesDrawerContent =
       dispatch({ type: "REMOVE_FAVORITE", payload: productId });
     };
 
-    const handleAddToCart = (item: any) => {
+    const handleAddToCart = (item: FavoriteDrawerItem) => {
       cartDispatch({
         type: "ADD_ITEM",
         payload: {
@@ -182,11 +187,6 @@ export const FavoritesDrawerContent =
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          console.log("Favorites item button clicked:", item);
-                          console.log(
-                            "openProductDialog function:",
-                            openProductDialog
-                          );
                           openProductDialog(convertFavoriteToProducto(item));
                         }}
                         aria-label={`Ver detalles de ${item.Nombre}`}

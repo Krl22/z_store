@@ -1,796 +1,534 @@
-import { useEffect, useState } from "react";
-import { useFilter } from "@/contexts/filter-context";
-import { useCart } from "../contexts/cart-context";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
+import {
+  ArrowDownUp,
+  Bookmark,
+  Check,
+  Leaf,
+  PackageCheck,
+  Plus,
+  Search,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useFavorites } from "../contexts/favorites-context";
-import { useProductDialog } from "../contexts/product-dialog-context";
-import { Bookmark, Plus } from "lucide-react";
-import { analytics, db } from "../lib/firebase";
-import { logEvent } from "firebase/analytics";
-import { collection, getDocs } from "firebase/firestore";
+import { useCart } from "@/contexts/cart-context";
+import { useFavorites } from "@/contexts/favorites-context";
+import { useFilter } from "@/contexts/filter-context";
+import { useProductDialog } from "@/contexts/product-dialog-context";
+import {
+  formatCurrency,
+  StoreCategory,
+  StoreProduct,
+  StorePromotion,
+  toLegacyProduct,
+} from "@/lib/storefront-v2";
+import { fetchStorefrontV2 } from "@/services/storefrontV2Service";
 
-type Producto = {
-  ID: string;
-  Tipo: string;
-  Categoria: string;
-  Subcategoria: string;
-  Hongo: string;
-  Nombre: string;
-  stock: string;
-  unidad: string;
-  precio: string;
-  image: string;
-  descripcion: string;
-  promocion?: string;
-};
-
-type Category = {
-  id: string;
-  name: string;
-  count: number;
-};
-
-// Firestore product document shape
-type FSProduct = {
-  tipo?: string;
-  categoria?: string;
-  subcategoria?: string;
-  hongo?: string;
-  nombre?: string;
-  stock?: number | string;
-  unidad?: string;
-  precio?: number | string;
-  image?: string;
-  descripcion?: string;
-  promocion?: boolean | string;
-};
-
-function useFirestoreProducts() {
-  const [data, setData] = useState<Producto[]>([]);
-
-  useEffect(() => {
-    const load = async () => {
-      const snap = await getDocs(collection(db, "products"));
-      const json: Producto[] = snap.docs.map((d) => {
-        const p = d.data() as FSProduct;
-        return {
-          ID: d.id,
-          Tipo: String(p.tipo ?? ""),
-          Categoria: String(p.categoria ?? ""),
-          Subcategoria: String(p.subcategoria ?? ""),
-          Hongo: String(p.hongo ?? ""),
-          Nombre: String(p.nombre ?? ""),
-          stock: String(p.stock ?? ""),
-          unidad: String(p.unidad ?? ""),
-          precio: String(p.precio ?? ""),
-          image: String(p.image ?? ""),
-          descripcion: String(p.descripcion ?? ""),
-          promocion:
-            p.promocion !== undefined ? String(p.promocion) : undefined,
-        };
-      });
-      setData(json);
-    };
-    load();
-  }, []);
-
-  return data;
-}
+type SortKey = "featured" | "price-low" | "price-high" | "name";
 
 export default function Home() {
-  const { activeFilter, setActiveFilter, searchQuery, priceRange } =
+  const [products, setProducts] = useState<StoreProduct[]>([]);
+  const [categories, setCategories] = useState<StoreCategory[]>([]);
+  const [promotions, setPromotions] = useState<StorePromotion[]>([]);
+  const [usingDemo, setUsingDemo] = useState(false);
+  const [sortBy, setSortBy] = useState<SortKey>("featured");
+  const [addedItems, setAddedItems] = useState<Record<string, boolean>>({});
+  const location = useLocation();
+  const { activeFilter, setActiveFilter, searchQuery, priceRange, resetFilters } =
     useFilter();
   const { dispatch } = useCart();
-  const [addedItems, setAddedItems] = useState<{ [key: string]: boolean }>({});
+  const { dispatch: favoritesDispatch, isFavorite } = useFavorites();
   const {
     selectedProduct,
     isDialogOpen,
     openProductDialog,
     closeProductDialog,
   } = useProductDialog();
-  const { dispatch: favoritesDispatch, isFavorite } = useFavorites();
 
-  const [selectedCategory, setSelectedCategory] = useState("todos");
-  const [sortBy, setSortBy] = useState("featured");
-
-  // Sincronizar selectedCategory con activeFilter
   useEffect(() => {
-    if (activeFilter === "all" || activeFilter === "") {
-      setSelectedCategory("todos");
-    } else {
-      setSelectedCategory(activeFilter);
-    }
-  }, [activeFilter]);
+    const load = async () => {
+      const data = await fetchStorefrontV2();
+      setProducts(data.products);
+      setCategories(data.categories);
+      setPromotions(data.promotions);
+      setUsingDemo(data.usingDemo);
+    };
+    load();
+  }, []);
 
-  const data = useFirestoreProducts();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const category = params.get("categoria");
+    if (category) setActiveFilter(category);
+  }, [location.search, setActiveFilter]);
 
-  // Función para validar que un producto tenga los campos esenciales (solo precio y nombre)
-  const isValidProduct = (producto: Producto): boolean => {
-    return !!(
-      producto.Nombre &&
-      producto.precio &&
-      producto.Nombre.trim() !== "" &&
-      producto.precio.trim() !== "" &&
-      !isNaN(parseFloat(producto.precio)) &&
-      parseFloat(producto.precio) > 0
-    );
+  const categoryById = useMemo(() => {
+    return new Map(categories.map((category) => [category.id, category]));
+  }, [categories]);
+
+  const selectedCategory =
+    activeFilter && activeFilter !== "all" ? activeFilter : "all";
+
+  const activeProducts = useMemo(() => {
+    return products.filter((product) => product.status === "active");
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const result = activeProducts.filter((product) => {
+      const category = categoryById.get(product.categoryId);
+      const searchable = [
+        product.name,
+        product.species,
+        product.format,
+        product.shortDescription,
+        category?.name || "",
+        product.badges.join(" "),
+      ]
+        .join(" ")
+        .toLowerCase();
+      const matchesSearch = !query || searchable.includes(query);
+      const matchesCategory =
+        selectedCategory === "all" || product.categoryId === selectedCategory;
+      const matchesMin =
+        priceRange.min === null || product.price >= priceRange.min;
+      const matchesMax =
+        priceRange.max === null || product.price <= priceRange.max;
+      return matchesSearch && matchesCategory && matchesMin && matchesMax;
+    });
+
+    return result.sort((a, b) => {
+      if (sortBy === "price-low") return a.price - b.price;
+      if (sortBy === "price-high") return b.price - a.price;
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      return Number(b.featured) - Number(a.featured);
+    });
+  }, [
+    activeProducts,
+    categoryById,
+    priceRange.max,
+    priceRange.min,
+    searchQuery,
+    selectedCategory,
+    sortBy,
+  ]);
+
+  const featuredPromo = promotions.find((promo) => promo.status === "active");
+  const currentProduct = selectedProduct
+    ? products.find((product) => product.id === selectedProduct.ID)
+    : null;
+
+  const getCategoryName = (categoryId: string) =>
+    categoryById.get(categoryId)?.name || categoryId;
+
+  const handleProductClick = (product: StoreProduct) => {
+    openProductDialog(toLegacyProduct(product, getCategoryName(product.categoryId)));
   };
 
-  // Filtrar solo productos válidos
-  const validProducts = data.filter(isValidProduct);
-
-  // Función para calcular el conteo considerando solo filtros de precio y búsqueda
-  const getFilteredCountForCategory = (categoryId: string) => {
-    return validProducts.filter((producto) => {
-      const precio = parseFloat(producto.precio) || 0;
-      let matchesCategory = true;
-
-      // Aplicar filtro de categoría específica
-      if (categoryId !== "todos") {
-        if (categoryId === "promociones") {
-          matchesCategory = producto.promocion === "true";
-        } else if (categoryId === "cubensis") {
-          matchesCategory =
-            producto.Tipo?.toLowerCase().includes("cubensis") ||
-            producto.Subcategoria?.toLowerCase().includes("cubensis") ||
-            producto.Nombre?.toLowerCase().includes("cubensis");
-        } else if (categoryId === "medicinal") {
-          matchesCategory =
-            producto.Categoria?.toLowerCase().includes("medicinal") ||
-            producto.Tipo?.toLowerCase().includes("medicinal") ||
-            producto.Subcategoria?.toLowerCase().includes("medicinal");
-        } else if (categoryId === "comestible") {
-          matchesCategory =
-            producto.Categoria?.toLowerCase().includes("comestible") ||
-            producto.Tipo?.toLowerCase().includes("comestible") ||
-            producto.Subcategoria?.toLowerCase().includes("comestible");
-        } else if (categoryId === "hongos") {
-          matchesCategory = producto.Categoria?.toLowerCase() === "hongos";
-        } else if (categoryId === "sustratos") {
-          matchesCategory =
-            producto.Categoria?.toLowerCase().includes("sustrato") ||
-            producto.Tipo?.toLowerCase().includes("sustrato") ||
-            producto.Subcategoria?.toLowerCase().includes("sustrato");
-        } else if (categoryId === "cultivos") {
-          matchesCategory =
-            producto.Categoria?.toLowerCase().includes("cultivo") ||
-            producto.Tipo?.toLowerCase().includes("cultivo") ||
-            producto.Subcategoria?.toLowerCase().includes("cultivo");
-        } else if (categoryId === "granos") {
-          matchesCategory =
-            producto.Categoria?.toLowerCase().includes("grano") ||
-            producto.Tipo?.toLowerCase().includes("grano") ||
-            producto.Subcategoria?.toLowerCase().includes("grano");
-        } else if (categoryId === "kits") {
-          matchesCategory =
-            producto.Categoria?.toLowerCase().includes("kit") ||
-            producto.Tipo?.toLowerCase().includes("kit") ||
-            producto.Subcategoria?.toLowerCase().includes("kit");
-        } else {
-          matchesCategory =
-            producto.Categoria?.toLowerCase() === categoryId.toLowerCase();
-        }
-      }
-
-      // Aplicar filtro de precio
-      let matchesPrice = true;
-      if (priceRange.min !== null) {
-        matchesPrice = precio >= priceRange.min;
-      }
-      if (priceRange.max !== null) {
-        matchesPrice = matchesPrice && precio <= priceRange.max;
-      }
-
-      // Aplicar filtro de búsqueda
-      let matchesSearch = true;
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        matchesSearch =
-          producto.Nombre.toLowerCase().includes(query) ||
-          producto.Tipo.toLowerCase().includes(query) ||
-          producto.Categoria.toLowerCase().includes(query) ||
-          producto.Subcategoria.toLowerCase().includes(query) ||
-          producto.precio.includes(query);
-      }
-
-      return matchesCategory && matchesPrice && matchesSearch;
-    }).length;
-  };
-
-  const categories = [
-    { id: "todos", name: "Todos", count: getFilteredCountForCategory("todos") },
-    {
-      id: "promociones",
-      name: "Promociones",
-      count: getFilteredCountForCategory("promociones"),
-    },
-    {
-      id: "cubensis",
-      name: "Cubensis",
-      count: getFilteredCountForCategory("cubensis"),
-    },
-    {
-      id: "medicinal",
-      name: "Medicinal",
-      count: getFilteredCountForCategory("medicinal"),
-    },
-    {
-      id: "comestible",
-      name: "Comestible",
-      count: getFilteredCountForCategory("comestible"),
-    },
-    {
-      id: "hongos",
-      name: "Hongos",
-      count: getFilteredCountForCategory("hongos"),
-    },
-    {
-      id: "sustratos",
-      name: "Sustratos",
-      count: getFilteredCountForCategory("sustratos"),
-    },
-    {
-      id: "cultivos",
-      name: "Cultivos",
-      count: getFilteredCountForCategory("cultivos"),
-    },
-    {
-      id: "granos",
-      name: "Granos",
-      count: getFilteredCountForCategory("granos"),
-    },
-    {
-      id: "kits",
-      name: "Kits",
-      count: getFilteredCountForCategory("kits"),
-    },
-  ];
-
-  const handleAddToFavorites = (producto: Producto, e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    if (isFavorite(producto.ID)) {
-      favoritesDispatch({ type: "REMOVE_FAVORITE", payload: producto.ID });
-      // 📊 Analytics: Producto removido de guardados
-      logEvent(analytics, "remove_from_wishlist", {
-        currency: "PEN",
-        value: parseFloat(producto.precio),
-        items: [
-          {
-            item_id: producto.ID,
-            item_name: producto.Nombre,
-            item_category: producto.Categoria,
-          },
-        ],
-      });
-    } else {
-      favoritesDispatch({
-        type: "ADD_FAVORITE",
-        payload: {
-          ID: producto.ID,
-          Nombre: producto.Nombre,
-          precio: producto.precio,
-          image: producto.image,
-          Tipo: producto.Tipo,
-          Categoria: producto.Categoria,
-          descripcion: producto.descripcion,
-          addedAt: Date.now(),
-        },
-      });
-      // 📊 Analytics: Producto agregado a guardados
-      logEvent(analytics, "add_to_wishlist", {
-        currency: "PEN",
-        value: parseFloat(producto.precio),
-        items: [
-          {
-            item_id: producto.ID,
-            item_name: producto.Nombre,
-            item_category: producto.Categoria,
-          },
-        ],
-      });
-    }
-  };
-
-  const filteredProducts = validProducts.filter((producto) => {
-    const precio = parseFloat(producto.precio) || 0;
-    let matchesFilter = true;
-    let matchesCategory = true;
-
-    // Filter by selected category
-    if (selectedCategory !== "todos") {
-      if (selectedCategory === "promociones") {
-        matchesCategory = producto.promocion === "true";
-      } else if (selectedCategory === "cubensis") {
-        matchesCategory =
-          producto.Tipo?.toLowerCase().includes("cubensis") ||
-          producto.Subcategoria?.toLowerCase().includes("cubensis") ||
-          producto.Nombre?.toLowerCase().includes("cubensis");
-      } else if (selectedCategory === "medicinal") {
-        matchesCategory =
-          producto.Categoria?.toLowerCase().includes("medicinal") ||
-          producto.Tipo?.toLowerCase().includes("medicinal") ||
-          producto.Subcategoria?.toLowerCase().includes("medicinal");
-      } else if (selectedCategory === "comestible") {
-        matchesCategory =
-          producto.Categoria?.toLowerCase().includes("comestible") ||
-          producto.Tipo?.toLowerCase().includes("comestible") ||
-          producto.Subcategoria?.toLowerCase().includes("comestible");
-      } else if (selectedCategory === "hongos") {
-        matchesCategory = producto.Categoria?.toLowerCase() === "hongos";
-      } else if (selectedCategory === "sustratos") {
-        matchesCategory =
-          producto.Categoria?.toLowerCase().includes("sustrato") ||
-          producto.Tipo?.toLowerCase().includes("sustrato") ||
-          producto.Subcategoria?.toLowerCase().includes("sustrato");
-      } else if (selectedCategory === "cultivos") {
-        matchesCategory =
-          producto.Categoria?.toLowerCase().includes("cultivo") ||
-          producto.Tipo?.toLowerCase().includes("cultivo") ||
-          producto.Subcategoria?.toLowerCase().includes("cultivo");
-      } else if (selectedCategory === "granos") {
-        matchesCategory =
-          producto.Categoria?.toLowerCase().includes("grano") ||
-          producto.Tipo?.toLowerCase().includes("grano") ||
-          producto.Subcategoria?.toLowerCase().includes("grano");
-      } else if (selectedCategory === "kits") {
-        matchesCategory =
-          producto.Categoria?.toLowerCase().includes("kit") ||
-          producto.Tipo?.toLowerCase().includes("kit") ||
-          producto.Subcategoria?.toLowerCase().includes("kit");
-      } else {
-        matchesCategory =
-          producto.Categoria?.toLowerCase() === selectedCategory.toLowerCase();
-      }
-    }
-
-    if (activeFilter && activeFilter !== "all") {
-      if (activeFilter === "promociones") {
-        matchesFilter = producto.promocion === "true";
-      } else if (activeFilter === "cubensis") {
-        matchesFilter =
-          producto.Tipo?.toLowerCase().includes("cubensis") ||
-          producto.Subcategoria?.toLowerCase().includes("cubensis") ||
-          producto.Nombre?.toLowerCase().includes("cubensis");
-      } else if (activeFilter === "medicinal") {
-        matchesFilter =
-          producto.Categoria?.toLowerCase().includes("medicinal") ||
-          producto.Tipo?.toLowerCase().includes("medicinal") ||
-          producto.Subcategoria?.toLowerCase().includes("medicinal");
-      } else if (activeFilter === "comestible") {
-        matchesFilter =
-          producto.Categoria?.toLowerCase().includes("comestible") ||
-          producto.Tipo?.toLowerCase().includes("comestible") ||
-          producto.Subcategoria?.toLowerCase().includes("comestible");
-      } else if (activeFilter === "hongos") {
-        matchesFilter = producto.Categoria?.toLowerCase() === "hongos";
-      } else if (activeFilter === "sustratos") {
-        matchesFilter =
-          producto.Categoria?.toLowerCase().includes("sustrato") ||
-          producto.Tipo?.toLowerCase().includes("sustrato") ||
-          producto.Subcategoria?.toLowerCase().includes("sustrato");
-      } else if (activeFilter === "cultivos") {
-        matchesFilter =
-          producto.Categoria?.toLowerCase().includes("cultivo") ||
-          producto.Tipo?.toLowerCase().includes("cultivo") ||
-          producto.Subcategoria?.toLowerCase().includes("cultivo");
-      } else if (activeFilter === "granos") {
-        matchesFilter =
-          producto.Categoria?.toLowerCase().includes("grano") ||
-          producto.Tipo?.toLowerCase().includes("grano") ||
-          producto.Subcategoria?.toLowerCase().includes("grano");
-      } else if (activeFilter === "kits") {
-        matchesFilter =
-          producto.Categoria?.toLowerCase().includes("kit") ||
-          producto.Tipo?.toLowerCase().includes("kit") ||
-          producto.Subcategoria?.toLowerCase().includes("kit");
-      } else {
-        matchesFilter =
-          producto.Categoria?.toLowerCase() === activeFilter.toLowerCase() ||
-          producto.Subcategoria?.toLowerCase() === activeFilter.toLowerCase() ||
-          producto.Tipo?.toLowerCase() === activeFilter.toLowerCase();
-      }
-    }
-
-    let matchesPrice = true;
-    if (priceRange.min !== null) {
-      matchesPrice = precio >= priceRange.min;
-    }
-    if (priceRange.max !== null) {
-      matchesPrice = matchesPrice && precio <= priceRange.max;
-    }
-
-    let matchesSearch = true;
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      matchesSearch =
-        producto.Nombre.toLowerCase().includes(query) ||
-        producto.Tipo.toLowerCase().includes(query) ||
-        producto.Categoria.toLowerCase().includes(query) ||
-        producto.Subcategoria.toLowerCase().includes(query) ||
-        producto.precio.includes(query);
-    }
-
-    return matchesCategory && matchesFilter && matchesPrice && matchesSearch;
-  });
-
-  // Sort products based on sortBy state
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    switch (sortBy) {
-      case "price-low":
-        return parseFloat(a.precio) - parseFloat(b.precio);
-      case "price-high":
-        return parseFloat(b.precio) - parseFloat(a.precio);
-      case "name":
-        return a.Nombre.localeCompare(b.Nombre);
-      case "featured":
-      default:
-        return 0; // Keep original order
-    }
-  });
-
-  const handleAddToCart = (producto: Producto, e: React.MouseEvent) => {
-    e.stopPropagation(); // Evita que el click se propague al contenedor padre
+  const handleAddToCart = (product: StoreProduct, event?: React.MouseEvent) => {
+    event?.stopPropagation();
     dispatch({
       type: "ADD_ITEM",
       payload: {
-        ID: producto.ID,
-        Nombre: producto.Nombre,
-        precio: producto.precio,
-        image: producto.image,
+        ID: product.id,
+        Nombre: product.name,
+        precio: String(product.price),
+        image: product.image,
         cantidad: 1,
       },
     });
-
-    // 📊 Analytics: Producto agregado al carrito
-    logEvent(analytics, "add_to_cart", {
-      currency: "PEN",
-      value: parseFloat(producto.precio),
-      items: [
-        {
-          item_id: producto.ID,
-          item_name: producto.Nombre,
-          item_category: producto.Categoria,
-          item_variant: producto.Tipo,
-          price: parseFloat(producto.precio),
-          quantity: 1,
-        },
-      ],
-    });
-
-    setAddedItems((prev) => ({ ...prev, [producto.ID]: true }));
-    setTimeout(() => {
-      setAddedItems((prev) => ({ ...prev, [producto.ID]: false }));
-    }, 1000);
+    setAddedItems((previous) => ({ ...previous, [product.id]: true }));
+    window.setTimeout(() => {
+      setAddedItems((previous) => ({ ...previous, [product.id]: false }));
+    }, 1200);
   };
-  // Agregar evento cuando ven detalles del producto:
-  const handleProductClick = (producto: Producto) => {
-    openProductDialog(producto);
 
-    // 📊 Analytics: Usuario vio detalles del producto
-    logEvent(analytics, "view_item", {
-      currency: "PEN",
-      value: parseFloat(producto.precio),
-      items: [
-        {
-          item_id: producto.ID,
-          item_name: producto.Nombre,
-          item_category: producto.Categoria,
-          item_variant: producto.Tipo,
-        },
-      ],
+  const handleFavorite = (product: StoreProduct, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (isFavorite(product.id)) {
+      favoritesDispatch({ type: "REMOVE_FAVORITE", payload: product.id });
+      return;
+    }
+    favoritesDispatch({
+      type: "ADD_FAVORITE",
+      payload: {
+        ID: product.id,
+        Nombre: product.name,
+        precio: String(product.price),
+        image: product.image,
+        Tipo: product.format,
+        Categoria: getCategoryName(product.categoryId),
+        descripcion: product.shortDescription,
+        addedAt: Date.now(),
+      },
     });
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 md:pb-0">
-      <div className="container mx-auto px-4 py-6 lg:px-8 mt-32 mb-14 lg:mt-16">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Desktop Sidebar - Como estaba originalmente */}
-          <div className="hidden lg:block lg:w-64 space-y-6">
-            {/* Sort Options */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-              <h3 className="font-semibold text-emerald-800 dark:text-amber-300 mb-4">
-                Ordenar por
-              </h3>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
-              >
-                <option value="featured">Destacados</option>
-                <option value="newest">Más nuevos</option>
-                <option value="price-low">Precio: Menor a mayor</option>
-                <option value="price-high">Precio: Mayor a menor</option>
-                <option value="rating">Mejor valorados</option>
-              </select>
-            </div>
+    <main className="min-h-screen bg-[#f7f3ea] pb-24 text-[#153328] md:pb-8">
+      <section className="relative overflow-hidden bg-[#10241d] pt-28 text-white md:pt-24">
+        <div className="absolute inset-0">
+          <img
+            src="/brand/hero-apothecary-v2.webp"
+            alt="Productos botanicos de Zeta Dorada"
+            className="h-full w-full object-cover opacity-55"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(9,24,18,0.96),rgba(9,24,18,0.78)_42%,rgba(9,24,18,0.24))]" />
+        </div>
 
-            {/* Categories */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-              <h3 className="font-semibold text-emerald-800 dark:text-amber-300 mb-4">
-                Categorías
-              </h3>
-              <div className="space-y-2">
-                {categories.map((category: Category) => (
-                  <button
-                    key={category.id}
-                    onClick={() => {
-                      setSelectedCategory(category.id);
-                      setActiveFilter(
-                        category.id === "todos" ? "all" : category.id
-                      );
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                      selectedCategory === category.id
-                        ? "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400"
-                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <span>{category.name}</span>
-                      <span className="text-sm">({category.count})</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-16">
+          <div className="max-w-2xl">
+            <Badge className="border-[#d8b56d]/40 bg-[#d8b56d]/15 text-[#f5d58b]">
+              Tienda V2 experimental
+            </Badge>
+            <h1 className="mt-5 text-4xl font-semibold leading-tight text-white md:text-6xl">
+              Catalogo premium para hongos medicinales.
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-[#e9e0c9] md:text-lg">
+              Productos mock editables desde admin, promociones listas para
+              campanas y una experiencia pensada para convertir visitas en
+              pedidos por WhatsApp.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Button
+                className="h-11 rounded-lg bg-[#d8b56d] px-5 text-[#10241d] hover:bg-[#f0cc7d]"
+                onClick={() => document.getElementById("catalogo")?.scrollIntoView()}
+              >
+                Ver productos
+              </Button>
+              <Button
+                variant="outline"
+                className="h-11 rounded-lg border-white/30 bg-white/10 px-5 text-white hover:bg-white/20"
+                onClick={() => setActiveFilter("kits")}
+              >
+                Ver kits
+              </Button>
             </div>
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
-            <h1 className="text-2xl lg:text-3xl font-bold mb-6 text-emerald-800 dark:text-amber-300 text-center lg:text-left">
-              {activeFilter && activeFilter !== "all"
-                ? `Productos: ${activeFilter}`
-                : "Todos nuestros productos"}
-            </h1>
+          <div className="grid content-end gap-3 sm:grid-cols-3 lg:self-end">
+            {[
+              { icon: ShieldCheck, label: "Compra asistida" },
+              { icon: Leaf, label: "Linea naturalista" },
+              { icon: PackageCheck, label: "Admin editable" },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-lg border border-white/15 bg-white/10 p-4 backdrop-blur"
+              >
+                <item.icon className="h-5 w-5 text-[#f0cc7d]" />
+                <p className="mt-3 text-sm font-medium text-white">{item.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            {/* Products Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-              {sortedProducts.map((producto) => (
-                <div
-                  key={producto.ID}
-                  onClick={() => handleProductClick(producto)}
-                  className="group bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer"
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {usingDemo && (
+          <div className="mb-6 rounded-lg border border-[#d8b56d]/40 bg-[#fff8e6] p-4 text-sm text-[#6a5122]">
+            Estas viendo contenido demo V2. Desde el panel admin puedes sembrar
+            esta estructura en Firestore y editarla para el cliente.
+          </div>
+        )}
+
+        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-lg bg-white p-5 shadow-sm">
+            <div className="flex items-start gap-3">
+              <Sparkles className="mt-1 h-5 w-5 text-[#a67c28]" />
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-[#a67c28]">
+                  Promocion activa
+                </p>
+                <h2 className="mt-1 text-2xl font-semibold text-[#153328]">
+                  {featuredPromo?.title || "Campanas listas para vender"}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-[#5d6f65]">
+                  {featuredPromo?.subtitle ||
+                    "Crea codigos, bundles y mensajes de campana desde admin."}
+                </p>
+              </div>
+            </div>
+            {featuredPromo && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Badge className="bg-[#153328] text-white">
+                  {featuredPromo.discountLabel}
+                </Badge>
+                <Badge variant="outline" className="border-[#d8b56d]">
+                  Codigo {featuredPromo.code}
+                </Badge>
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-lg bg-[#153328] p-5 text-white shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-wide text-[#f0cc7d]">
+              Categorias
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                variant={selectedCategory === "all" ? "default" : "outline"}
+                className={
+                  selectedCategory === "all"
+                    ? "rounded-lg bg-[#d8b56d] text-[#153328] hover:bg-[#f0cc7d]"
+                    : "rounded-lg border-white/25 bg-white/5 text-white hover:bg-white/15"
+                }
+                onClick={() => setActiveFilter("all")}
+              >
+                Todos
+              </Button>
+              {categories.map((category) => (
+                <Button
+                  key={category.id}
+                  variant={selectedCategory === category.id ? "default" : "outline"}
+                  className={
+                    selectedCategory === category.id
+                      ? "rounded-lg bg-[#d8b56d] text-[#153328] hover:bg-[#f0cc7d]"
+                      : "rounded-lg border-white/25 bg-white/5 text-white hover:bg-white/15"
+                  }
+                  onClick={() => setActiveFilter(category.id)}
                 >
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={producto.image}
-                      alt={producto.Hongo}
-                      className="w-full h-48 sm:h-56 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-3 left-3 flex flex-col gap-2">
-                      {producto.promocion === "true" && (
-                        <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                          Oferta
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={(e) => handleAddToFavorites(producto, e)}
-                      className="absolute top-3 right-3 p-2 bg-white/90 dark:bg-gray-800/90 rounded-full hover:bg-white dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <Bookmark
-                        className={`h-4 w-4 ${
-                          isFavorite(producto.ID)
-                            ? "fill-blue-500 text-blue-500"
-                            : "text-gray-600 dark:text-gray-400"
-                        }`}
-                      />
-                    </button>
-                    <div className="absolute bottom-3 right-3 z-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="sm"
-                        onClick={(e) => handleAddToCart(producto, e)}
-                        className={`transition-all duration-300 ${
-                          addedItems[producto.ID]
-                            ? "bg-green-600 hover:bg-green-700 scale-110 shadow-lg"
-                            : "bg-emerald-600 hover:bg-emerald-700"
-                        }`}
-                      >
-                        {addedItems[producto.ID] ? (
-                          <div className="flex items-center gap-1">
-                            <span className="text-sm">✓</span>
-                            <span>Agregado</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1">
-                            <Plus className="h-3 w-3" />
-                            <span>Agregar</span>
-                          </div>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                      {producto.Nombre || producto.Hongo}
-                    </h3>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-emerald-600">
-                          S/{producto.precio}
-                        </span>
-                      </div>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                        {producto.Categoria}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                  {category.name}
+                </Button>
               ))}
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Product Dialog - Enhanced */}
+      <section id="catalogo" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-5 flex flex-col justify-between gap-4 rounded-lg bg-white p-4 shadow-sm md:flex-row md:items-center">
+          <div>
+            <p className="text-sm text-[#5d6f65]">
+              {filteredProducts.length} productos encontrados
+            </p>
+            <h2 className="text-2xl font-semibold text-[#153328]">
+              {selectedCategory === "all"
+                ? "Seleccion premium"
+                : getCategoryName(selectedCategory)}
+            </h2>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {(searchQuery || selectedCategory !== "all" || priceRange.min || priceRange.max) && (
+              <Button
+                variant="outline"
+                className="rounded-lg border-[#d7d0bd]"
+                onClick={resetFilters}
+              >
+                Limpiar filtros
+              </Button>
+            )}
+            <label className="flex items-center gap-2 rounded-lg border border-[#d7d0bd] bg-[#fbfaf6] px-3 py-2 text-sm">
+              <ArrowDownUp className="h-4 w-4 text-[#6f7f74]" />
+              <select
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value as SortKey)}
+                className="bg-transparent text-[#153328] outline-none"
+              >
+                <option value="featured">Destacados</option>
+                <option value="price-low">Precio menor</option>
+                <option value="price-high">Precio mayor</option>
+                <option value="name">Nombre</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        {filteredProducts.length ? (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filteredProducts.map((product) => (
+              <article
+                key={product.id}
+                onClick={() => handleProductClick(product)}
+                className="group cursor-pointer overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-[#e3dccb] transition hover:-translate-y-1 hover:shadow-xl"
+              >
+                <div className="relative aspect-[4/3] overflow-hidden bg-[#10241d]">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+                    {product.badges.slice(0, 2).map((badge) => (
+                      <Badge
+                        key={badge}
+                        className="bg-white/90 text-[#153328] backdrop-blur"
+                      >
+                        {badge}
+                      </Badge>
+                    ))}
+                  </div>
+                  <button
+                    className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-lg bg-white/90 text-[#153328] backdrop-blur transition hover:bg-white"
+                    onClick={(event) => handleFavorite(product, event)}
+                    aria-label="Guardar producto"
+                  >
+                    <Bookmark
+                      className={`h-4 w-4 ${
+                        isFavorite(product.id) ? "fill-[#d8b56d] text-[#d8b56d]" : ""
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#a67c28]">
+                    {getCategoryName(product.categoryId)}
+                  </p>
+                  <h3 className="mt-1 min-h-12 text-lg font-semibold leading-6 text-[#153328]">
+                    {product.name}
+                  </h3>
+                  <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-[#5d6f65]">
+                    {product.shortDescription}
+                  </p>
+                  <div className="mt-4 flex items-end justify-between gap-3">
+                    <div>
+                      <p className="text-xl font-semibold text-[#153328]">
+                        {formatCurrency(product.price)}
+                      </p>
+                      {product.compareAtPrice && (
+                        <p className="text-sm text-[#89968d] line-through">
+                          {formatCurrency(product.compareAtPrice)}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      className={`rounded-lg ${
+                        addedItems[product.id]
+                          ? "bg-[#2f7d50] text-white"
+                          : "bg-[#153328] text-white hover:bg-[#24503f]"
+                      }`}
+                      onClick={(event) => handleAddToCart(product, event)}
+                    >
+                      {addedItems[product.id] ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Listo
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4" />
+                          Agregar
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-[#b8ad95] bg-white p-10 text-center">
+            <Search className="mx-auto h-8 w-8 text-[#a67c28]" />
+            <h3 className="mt-3 text-xl font-semibold text-[#153328]">
+              No encontramos productos
+            </h3>
+            <p className="mt-2 text-sm text-[#5d6f65]">
+              Ajusta busqueda, categoria o precio para ver mas opciones.
+            </p>
+          </div>
+        )}
+      </section>
+
       <Dialog
         open={isDialogOpen}
         onOpenChange={(open) => !open && closeProductDialog()}
       >
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white via-emerald-50/30 to-amber-50/20 dark:from-gray-900 dark:via-emerald-950/30 dark:to-amber-950/20 border-2 border-emerald-200/50 dark:border-emerald-800/50 shadow-2xl rounded-2xl backdrop-blur-sm">
-          <DialogHeader className="pb-6 border-b border-emerald-100 dark:border-emerald-800/50">
-            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-emerald-700 to-emerald-600 dark:from-amber-400 dark:to-amber-300 bg-clip-text text-transparent">
-              {selectedProduct?.Hongo}
+        <DialogContent className="max-h-[92vh] overflow-y-auto rounded-lg border-[#d8b56d]/30 bg-[#fbfaf6] sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-[#153328]">
+              {currentProduct?.name || selectedProduct?.Nombre}
             </DialogTitle>
-            <div className="mt-2">
-              <p className="text-sm italic text-gray-600 dark:text-gray-400 font-medium">
-                <span className="text-emerald-600 dark:text-amber-400">
-                  Nombre científico:
-                </span>{" "}
-                {selectedProduct?.Nombre}
-              </p>
-            </div>
           </DialogHeader>
 
           {selectedProduct && (
-            <div className="space-y-6 py-6">
-              {/* Imagen centrada y cuadrada en la parte superior */}
-              <div className="flex justify-center">
-                <div className="relative w-80 h-80 rounded-2xl overflow-hidden shadow-lg ring-1 ring-emerald-200/50 dark:ring-emerald-800/50">
-                  <img
-                    src={selectedProduct.image}
-                    alt={selectedProduct.Hongo}
-                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                  />
-                  {/* Botón de guardados en el diálogo */}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={(e) => handleAddToFavorites(selectedProduct, e)}
-                    className={`absolute top-3 right-3 h-12 w-12 p-0 rounded-full transition-all duration-300 shadow-lg backdrop-blur-sm ${
-                      isFavorite(selectedProduct.ID)
-                        ? "bg-blue-500/90 hover:bg-blue-600 text-white scale-110"
-                        : "bg-white/90 hover:bg-white text-gray-600 hover:text-blue-500 hover:scale-110"
-                    }`}
-                  >
-                    <Bookmark
-                      className={`h-6 w-6 transition-all duration-300 ${
-                        isFavorite(selectedProduct.ID) ? "fill-current" : ""
-                      }`}
-                    />
-                  </Button>
-
-                  {/* Badge de promoción si aplica */}
-                  {selectedProduct.promocion === "true" && (
-                    <div className="absolute top-3 left-3 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
-                      ¡Promoción!
-                    </div>
-                  )}
-                </div>
+            <div className="grid gap-6 md:grid-cols-[0.9fr_1.1fr]">
+              <div className="overflow-hidden rounded-lg bg-[#10241d]">
+                <img
+                  src={currentProduct?.image || selectedProduct.image}
+                  alt={currentProduct?.name || selectedProduct.Nombre}
+                  className="aspect-square h-full w-full object-cover"
+                />
               </div>
-
-              {/* Contenedores de detalles en 2 columnas en desktop, 1 columna en móvil */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white/60 dark:bg-gray-800/60 p-4 rounded-xl shadow-sm border border-emerald-100 dark:border-emerald-800/30">
-                  <h3 className="font-semibold text-lg text-emerald-800 dark:text-amber-300 mb-2 flex items-center">
-                    <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
-                    Detalles
-                  </h3>
-                  <div className="space-y-1">
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      <span className="font-medium">Tipo:</span>{" "}
-                      {selectedProduct.Tipo}
-                    </p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      <span className="font-medium">Categoría:</span>{" "}
-                      {selectedProduct.Categoria}
-                    </p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      <span className="font-medium">Subcategoría:</span>{" "}
-                      {selectedProduct.Subcategoria}
-                    </p>
-                  </div>
+              <div>
+                <div className="flex flex-wrap gap-2">
+                  {(currentProduct?.badges || [selectedProduct.Subcategoria])
+                    .filter(Boolean)
+                    .map((badge) => (
+                      <Badge key={badge} className="bg-[#153328] text-white">
+                        {badge}
+                      </Badge>
+                    ))}
                 </div>
+                <p className="mt-4 text-sm font-semibold uppercase tracking-wide text-[#a67c28]">
+                  {currentProduct
+                    ? getCategoryName(currentProduct.categoryId)
+                    : selectedProduct.Categoria}
+                </p>
+                <p className="mt-3 leading-7 text-[#485b51]">
+                  {currentProduct?.description || selectedProduct.descripcion}
+                </p>
 
-                <div className="bg-white/60 dark:bg-gray-800/60 p-4 rounded-xl shadow-sm border border-emerald-100 dark:border-emerald-800/30">
-                  <h3 className="font-semibold text-lg text-emerald-800 dark:text-amber-300 mb-2 flex items-center">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                    Disponibilidad
-                  </h3>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    <span className="font-bold text-green-600 dark:text-green-400">
-                      {selectedProduct.stock}
-                    </span>{" "}
-                    {selectedProduct.unidad} disponibles
+                {currentProduct && (
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    {currentProduct.benefits.map((benefit) => (
+                      <div
+                        key={benefit}
+                        className="rounded-lg border border-[#e3dccb] bg-white p-3 text-sm text-[#153328]"
+                      >
+                        <Check className="mb-2 h-4 w-4 text-[#2f7d50]" />
+                        {benefit}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="mt-6 rounded-lg bg-white p-4">
+                  <p className="text-sm text-[#5d6f65]">Ritual sugerido</p>
+                  <p className="mt-1 text-sm font-medium text-[#153328]">
+                    {currentProduct?.ritualTip ||
+                      "Agrega este producto al pedido y confirma por WhatsApp."}
                   </p>
                 </div>
 
-                <div className="bg-white/60 dark:bg-gray-800/60 p-4 rounded-xl shadow-sm border border-emerald-100 dark:border-emerald-800/30">
-                  <h3 className="font-semibold text-lg text-emerald-800 dark:text-amber-300 mb-2 flex items-center">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                    Descripción
-                  </h3>
-                  <div className="max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-300 dark:scrollbar-thumb-amber-400 scrollbar-track-gray-100 dark:scrollbar-track-gray-700">
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed pr-2">
-                      {selectedProduct.descripcion}
+                <div className="mt-6 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-3xl font-semibold text-[#153328]">
+                      {formatCurrency(
+                        currentProduct?.price || Number(selectedProduct.precio)
+                      )}
                     </p>
-                  </div>
-                </div>
-
-                <div className="bg-white/60 dark:bg-gray-800/60 p-4 rounded-xl shadow-sm border border-emerald-100 dark:border-emerald-800/30">
-                  <h3 className="font-semibold text-lg text-emerald-800 dark:text-amber-300 mb-3 flex items-center">
-                    <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
-                    Precio
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-emerald-700 dark:text-amber-400">
-                        S/{selectedProduct.precio}
+                    {currentProduct?.compareAtPrice && (
+                      <p className="text-sm text-[#89968d] line-through">
+                        {formatCurrency(currentProduct.compareAtPrice)}
                       </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button
-                        onClick={(e) =>
-                          handleAddToFavorites(selectedProduct, e)
-                        }
-                        variant="outline"
-                        size="lg"
-                        className={`h-11 transition-all duration-200 ${
-                          isFavorite(selectedProduct.ID)
-                            ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300"
-                            : "hover:bg-gray-50 dark:hover:bg-gray-800"
-                        }`}
-                      >
-                        <Bookmark
-                          className={`h-4 w-4 mr-2 ${
-                            isFavorite(selectedProduct.ID) ? "fill-current" : ""
-                          }`}
-                        />
-                        {isFavorite(selectedProduct.ID)
-                          ? "Guardado"
-                          : "Guardar"}
-                      </Button>
-
-                      <Button
-                        onClick={(e) => {
-                          handleAddToCart(selectedProduct, e);
-                          closeProductDialog();
-                        }}
-                        size="lg"
-                        className="h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors duration-200"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Añadir
-                      </Button>
-                    </div>
+                    )}
                   </div>
+                  <Button
+                    className="h-11 rounded-lg bg-[#153328] px-5 text-white hover:bg-[#24503f]"
+                    onClick={() => {
+                      if (currentProduct) handleAddToCart(currentProduct);
+                      closeProductDialog();
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Agregar
+                  </Button>
                 </div>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </main>
   );
 }

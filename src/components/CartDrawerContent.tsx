@@ -1,21 +1,22 @@
-import { useCart } from "../contexts/cart-context";
-import { Button } from "./ui/button";
+import { useEffect, useState } from "react";
+import { MessageCircle, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DrawerClose,
-  DrawerTitle,
   DrawerDescription,
   DrawerHeader,
-} from "./ui/drawer";
-import { Minus, Plus, Trash2, ChevronDown } from "lucide-react";
-import { YapePayment } from "./YapePayment";
-import { Dialog } from "./ui/dialog";
-import { useEffect, useState, useRef } from "react";
-import { ProfileDialog } from "./ProfileDialog";
-import { useAuth } from "../contexts/auth-context";
-import { userProfileService } from "../services/userProfileService";
-import { useProductDialog } from "../contexts/product-dialog-context";
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { useCart } from "@/contexts/cart-context";
+import { useProductDialog } from "@/contexts/product-dialog-context";
+import {
+  defaultStoreContent,
+  formatCurrency,
+  StorefrontContent,
+} from "@/lib/storefront-v2";
+import { fetchStorefrontContent } from "@/services/storefrontV2Service";
 
-type Producto = {
+type CartLegacyProduct = {
   ID: string;
   Tipo: string;
   Categoria: string;
@@ -27,428 +28,169 @@ type Producto = {
   precio: string;
   image: string;
   descripcion: string;
-  promocion?: string;
 };
 
-interface CartDrawerContentProps {
-  // Removido onProductClick - ahora usa el contexto directamente
-}
-
-export const CartDrawerContent = ({}: CartDrawerContentProps = {}) => {
+export const CartDrawerContent = () => {
   const { state, dispatch } = useCart();
   const { openProductDialog } = useProductDialog();
-  const [showScrollHint, setShowScrollHint] = useState(false);
-  const [hasScrolled, setHasScrolled] = useState(false);
-  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
-  const [userInteracted, setUserInteracted] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const autoScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [showProfileDialog, setShowProfileDialog] = useState(false);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const { user } = useAuth();
+  const [content, setContent] =
+    useState<StorefrontContent>(defaultStoreContent);
 
-  // Función para convertir CartItem a Producto
-  const convertCartItemToProducto = (item: any): Producto => {
-    // Inferir tipo y categoría basado en el nombre del producto
-    let tipo = "";
-    let categoria = "";
-    let subcategoria = "";
-    let stock = "Disponible";
-    let unidad = "unidad";
+  useEffect(() => {
+    const load = async () => {
+      setContent(await fetchStorefrontContent());
+    };
+    load();
+  }, []);
 
-    const nombreLower = item.Nombre.toLowerCase();
-    
-    // Inferir tipo
-    if (nombreLower.includes("cubensis")) {
-      tipo = "Cubensis";
-    } else if (nombreLower.includes("oyster") || nombreLower.includes("ostra")) {
-      tipo = "Oyster";
-    } else if (nombreLower.includes("shiitake")) {
-      tipo = "Shiitake";
+  const updateQuantity = (ID: string, cantidad: number) => {
+    if (cantidad < 1) {
+      dispatch({ type: "REMOVE_ITEM", payload: ID });
+      return;
     }
+    dispatch({ type: "UPDATE_QUANTITY", payload: { ID, cantidad } });
+  };
 
-    // Inferir categoría y subcategoría
-    if (nombreLower.includes("grano")) {
-      categoria = "Grano";
-      subcategoria = "Colonizado";
-      stock = "30";
-      unidad = "Bolsas";
-    } else if (nombreLower.includes("kit")) {
-      categoria = "Kit";
-      subcategoria = "Completo";
-      stock = "15";
-      unidad = "Kits";
-    } else if (nombreLower.includes("sustrato")) {
-      categoria = "Sustrato";
-      subcategoria = "Esterilizado";
-      stock = "25";
-      unidad = "Bolsas";
-    } else {
-      categoria = "Hongos";
-      subcategoria = "Fresco";
-      stock = "20";
-      unidad = "unidades";
-    }
-
-    return {
+  const openCartProduct = (item: (typeof state.items)[number]) => {
+    const product: CartLegacyProduct = {
       ID: item.ID,
-      Tipo: tipo,
-      Categoria: categoria,
-      Subcategoria: subcategoria,
+      Tipo: "Producto",
+      Categoria: "Catalogo",
+      Subcategoria: "",
       Hongo: item.Nombre,
       Nombre: item.Nombre,
-      stock: stock,
-      unidad: unidad,
+      stock: "Disponible",
+      unidad: "unidad",
       precio: item.precio,
       image: item.image,
-      descripcion: `Producto de alta calidad. ${item.Nombre} disponible para entrega inmediata.`,
-      promocion: undefined,
+      descripcion:
+        "Producto agregado al carrito. Abre la tienda para ver mas detalles o envia el pedido por WhatsApp.",
     };
+    openProductDialog(product);
   };
 
-  const [canMakePurchase, setCanMakePurchase] = useState(true);
-
-  const handleProceedToPayment = async () => {
-    if (!user) {
-      return;
-    }
-
-    try {
-      const profile = await userProfileService.getUserProfile(user.uid);
-      const canPurchase = userProfileService.canMakePurchase(profile);
-      setCanMakePurchase(canPurchase);
-
-      if (!canPurchase) {
-        setShowProfileDialog(true);
-      } else {
-        setShowPaymentDialog(true);
-      }
-    } catch (error) {
-      console.error("Error al verificar perfil:", error);
-    }
-  };
-
-  useEffect(() => {
-    const checkUserProfile = async () => {
-      if (user) {
-        try {
-          const profile = await userProfileService.getUserProfile(user.uid);
-          setCanMakePurchase(userProfileService.canMakePurchase(profile));
-        } catch (error) {
-          console.error("Error al verificar perfil:", error);
-          setCanMakePurchase(false);
-        }
-      }
-    };
-
-    checkUserProfile();
-  }, [user]);
-
-  useEffect(() => {
-    const checkUserProfile = async () => {
-      if (user && !showProfileDialog) {
-        try {
-          const profile = await userProfileService.getUserProfile(user.uid);
-          setCanMakePurchase(userProfileService.canMakePurchase(profile));
-        } catch (error) {
-          console.error("Error al verificar perfil:", error);
-          setCanMakePurchase(false);
-        }
-      }
-    };
-
-    if (!showProfileDialog && user) {
-      checkUserProfile();
-    }
-  }, [showProfileDialog, user]);
-
-  const updateQuantity = (ID: string, newQuantity: number) => {
-    if (newQuantity < 1) {
-      dispatch({ type: "REMOVE_ITEM", payload: ID });
-    } else {
-      dispatch({
-        type: "UPDATE_QUANTITY",
-        payload: { ID, cantidad: newQuantity },
-      });
-    }
-  };
-
-  // Función para detener el auto-scroll
-  const stopAutoScroll = () => {
-    if (autoScrollIntervalRef.current) {
-      clearInterval(autoScrollIntervalRef.current);
-      autoScrollIntervalRef.current = null;
-    }
-    if (autoScrollTimeoutRef.current) {
-      clearTimeout(autoScrollTimeoutRef.current);
-      autoScrollTimeoutRef.current = null;
-    }
-    setIsAutoScrolling(false);
-    setUserInteracted(true);
-  };
-
-  // Función para iniciar el auto-scroll
-  const startAutoScroll = () => {
-    if (!containerRef.current || userInteracted || state.items.length <= 2)
-      return;
-
-    const container = containerRef.current;
-    const maxScroll = container.scrollHeight - container.clientHeight;
-
-    if (maxScroll <= 0) return; // No hay contenido para hacer scroll
-
-    setIsAutoScrolling(true);
-    let currentScroll = 0;
-    const scrollStep = 0.5; // Píxeles por paso
-    const scrollDelay = 50; // Milisegundos entre pasos (más bajo = más rápido)
-
-    autoScrollIntervalRef.current = setInterval(() => {
-      if (!containerRef.current || userInteracted) {
-        stopAutoScroll();
-        return;
-      }
-
-      currentScroll += scrollStep;
-      containerRef.current.scrollTop = currentScroll;
-
-      // Si llegamos al final, esperamos un poco y volvemos al inicio
-      if (currentScroll >= maxScroll) {
-        clearInterval(autoScrollIntervalRef.current!);
-        autoScrollTimeoutRef.current = setTimeout(() => {
-          if (containerRef.current && !userInteracted) {
-            containerRef.current.scrollTop = 0;
-            currentScroll = 0;
-            startAutoScroll(); // Reiniciar el ciclo
-          }
-        }, 2000); // Pausa de 2 segundos al final
-      }
-    }, scrollDelay);
-  };
-
-  // Detectar interacciones del usuario
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleUserInteraction = () => {
-      stopAutoScroll();
-    };
-
-    // Eventos de interacción
-    const events = ["mousedown", "touchstart", "wheel", "keydown"];
-
-    events.forEach((event) => {
-      container.addEventListener(event, handleUserInteraction, {
-        passive: true,
-      });
-      document.addEventListener(event, handleUserInteraction, {
-        passive: true,
-      });
+  const sendWhatsappOrder = () => {
+    if (!state.items.length) return;
+    const lines = state.items.map((item) => {
+      const subtotal = Number(item.precio) * item.cantidad;
+      return `- ${item.Nombre} x${item.cantidad}: ${formatCurrency(subtotal)}`;
     });
-
-    return () => {
-      events.forEach((event) => {
-        container.removeEventListener(event, handleUserInteraction);
-        document.removeEventListener(event, handleUserInteraction);
-      });
-    };
-  }, []);
-
-  // Iniciar auto-scroll cuando se abra el drawer
-  useEffect(() => {
-    if (state.items.length > 2) {
-      // Resetear estado cuando cambian los items
-      setUserInteracted(false);
-
-      // Esperar un poco para que el drawer se abra completamente
-      const timer = setTimeout(() => {
-        startAutoScroll();
-      }, 500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [state.items.length]);
-
-  // Limpiar intervalos al desmontar
-  useEffect(() => {
-    return () => {
-      stopAutoScroll();
-    };
-  }, []);
-
-  useEffect(() => {
-    const container = document.querySelector(".cart-items-container");
-    if (container) {
-      const checkScroll = () => {
-        setShowScrollHint(container.scrollHeight > container.clientHeight);
-        setHasScrolled(container.scrollTop > 0);
-      };
-
-      container.addEventListener("scroll", checkScroll);
-      checkScroll(); // Check initial state
-
-      return () => container.removeEventListener("scroll", checkScroll);
-    }
-  }, [state.items]);
+    const text = [
+      content.whatsappMessage,
+      "",
+      ...lines,
+      "",
+      `Total estimado: ${formatCurrency(state.total)}`,
+    ].join("\n");
+    const number = content.whatsappNumber.replace(/\D/g, "");
+    window.open(`https://wa.me/${number}?text=${encodeURIComponent(text)}`, "_blank");
+  };
 
   return (
-    <div className="flex flex-col h-full max-h-[70vh]">
-      <DrawerHeader className="pb-2 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <DrawerTitle>Tu Carrito de Compras</DrawerTitle>
-            <DrawerDescription>
-              Aquí puedes revisar los productos que has agregado a tu carrito
-            </DrawerDescription>
-          </div>
-        </div>
+    <div className="flex max-h-[82vh] flex-col">
+      <DrawerHeader>
+        <DrawerTitle className="flex items-center gap-2">
+          <ShoppingBag className="h-5 w-5 text-[#a67c28]" />
+          Tu pedido
+        </DrawerTitle>
+        <DrawerDescription>
+          Revisa productos y envia el pedido por WhatsApp.
+        </DrawerDescription>
       </DrawerHeader>
 
-      {/* Contenedor principal */}
-      <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
-        <div
-          ref={containerRef}
-          className={`cart-items-container flex-1 overflow-y-auto px-4 py-2 transition-all ${
-            hasScrolled ? "pb-4" : "pb-2"
-          } ${isAutoScrolling ? "scroll-smooth" : ""}`}
-          style={{ maxHeight: "calc(100% - 0px)" }}
-        >
-          {state.items.length === 0 ? (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-              Tu carrito está vacío
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+        {state.items.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-[#cdbf9e] p-8 text-center">
+            <ShoppingBag className="mx-auto h-8 w-8 text-[#a67c28]" />
+            <p className="mt-3 text-sm text-[#5d6f65]">
+              Tu carrito esta vacio.
             </p>
-          ) : (
-            <div className="space-y-3">
-              {state.items.map((item) => (
-                <div
-                  key={item.ID}
-                  className="flex items-center gap-3 bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm"
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            {state.items.map((item) => (
+              <div
+                key={item.ID}
+                className="grid grid-cols-[72px_1fr_auto] gap-3 rounded-lg border border-[#e3dccb] bg-white p-3"
+              >
+                <button
+                  className="overflow-hidden rounded-lg bg-[#10241d]"
+                  onClick={() => openCartProduct(item)}
                 >
-                  {/* Área clickeable del producto */}
-                  <div className="flex items-center gap-3 flex-1 min-w-0 relative">
-                    <button
-                      className="absolute inset-0 w-full h-full cursor-pointer z-10 bg-transparent hover:bg-black/5 transition-colors"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log("Cart item button clicked:", item);
-                        console.log(
-                          "openProductDialog function:",
-                          openProductDialog
-                        );
-                        openProductDialog(convertCartItemToProducto(item));
-                      }}
-                      aria-label={`Ver detalles de ${item.Nombre}`}
-                    />
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <img
-                        src={item.image}
-                        alt={item.Nombre}
-                        className="w-16 h-16 object-cover rounded-md flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-emerald-800 dark:text-amber-300 text-sm truncate">
-                          {item.Nombre}
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          S/{item.precio}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Controles del carrito */}
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        onClick={() =>
-                          updateQuantity(item.ID, item.cantidad - 1)
-                        }
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="w-8 text-center text-sm">
-                        {item.cantidad}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        onClick={() =>
-                          updateQuantity(item.ID, item.cantidad + 1)
-                        }
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-500 h-7 w-7 p-0"
-                        onClick={() =>
-                          dispatch({ type: "REMOVE_ITEM", payload: item.ID })
-                        }
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+                  <img
+                    src={item.image}
+                    alt={item.Nombre}
+                    className="h-full w-full object-cover"
+                  />
+                </button>
+                <div className="min-w-0">
+                  <button
+                    className="line-clamp-2 text-left text-sm font-semibold text-[#153328]"
+                    onClick={() => openCartProduct(item)}
+                  >
+                    {item.Nombre}
+                  </button>
+                  <p className="mt-1 text-sm text-[#5d6f65]">
+                    {formatCurrency(Number(item.precio))}
+                  </p>
+                  <div className="mt-3 flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 rounded-lg"
+                      onClick={() => updateQuantity(item.ID, item.cantidad - 1)}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <span className="w-8 text-center text-sm">
+                      {item.cantidad}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 rounded-lg"
+                      onClick={() => updateQuantity(item.ID, item.cantidad + 1)}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Indicador de scroll mejorado */}
-        {showScrollHint && !hasScrolled && !isAutoScrolling && (
-          <div className="absolute bottom-16 left-0 right-0 flex justify-center animate-bounce z-10">
-            <div className="bg-amber-400 dark:bg-amber-600 text-emerald-800 dark:text-white p-1.5 rounded-full shadow-lg">
-              <ChevronDown className="h-4 w-4" />
-            </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg text-red-600"
+                  onClick={() =>
+                    dispatch({ type: "REMOVE_ITEM", payload: item.ID })
+                  }
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Sección de pago */}
       {state.items.length > 0 && (
-        <div className="flex-shrink-0 bg-background border-t border-gray-200 dark:border-gray-700 p-3 space-y-3 shadow-lg mt-auto">
-          <div className="flex justify-between text-lg font-semibold">
-            <span>Total:</span>
-            <span>S/{state.total.toFixed(2)}</span>
+        <div className="border-t border-[#e3dccb] bg-[#fbfaf6] p-4">
+          <div className="mb-4 flex items-center justify-between">
+            <span className="text-sm text-[#5d6f65]">Total estimado</span>
+            <span className="text-2xl font-semibold text-[#153328]">
+              {formatCurrency(state.total)}
+            </span>
           </div>
-          <div className="space-y-2">
-            <Button
-              className="w-full bg-amber-400 hover:bg-amber-500 text-emerald-800 dark:bg-amber-600 dark:hover:bg-amber-700 dark:text-white h-10"
-              onClick={handleProceedToPayment}
-            >
-              {!user
-                ? "Iniciar sesión para comprar"
-                : !canMakePurchase
-                ? "Completar perfil para comprar"
-                : "Proceder al pago"}
+          <Button
+            className="h-11 w-full rounded-lg bg-[#153328] text-white hover:bg-[#24503f]"
+            onClick={sendWhatsappOrder}
+          >
+            <MessageCircle className="h-4 w-4" />
+            Enviar por WhatsApp
+          </Button>
+          <DrawerClose asChild>
+            <Button variant="outline" className="mt-2 h-10 w-full rounded-lg">
+              Seguir comprando
             </Button>
-
-            <Dialog
-              open={showPaymentDialog}
-              onOpenChange={setShowPaymentDialog}
-            >
-              <YapePayment />
-            </Dialog>
-
-            <ProfileDialog
-              open={showProfileDialog}
-              onOpenChange={setShowProfileDialog}
-            />
-
-            <DrawerClose asChild>
-              <Button variant="outline" className="w-full h-9">
-                Seguir comprando
-              </Button>
-            </DrawerClose>
-          </div>
+          </DrawerClose>
         </div>
       )}
     </div>

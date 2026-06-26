@@ -1,6 +1,6 @@
 {
-  "name": "Zeta Store",
-  "short_name": "ZetaStore",
+  "name": "Zeta Dorada",
+  "short_name": "Zeta Dorada",
   "icons": [
     {
       "src": "/pwa-192x192.png",
@@ -29,7 +29,7 @@
   ],
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#FFFFFF",
-  "description": "Store for zeta dorada"
+  "background_color": "#f7f3ea",
+  "theme_color": "#10241d",
+  "description": "Tienda premium de hongos medicinales y rituales botanicos"
 }
