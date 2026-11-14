@@ -1,54 +1,31 @@
-# React + TypeScript + Vite
+# Zeta Dorada — tienda web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Web de la tienda Zeta Dorada: clon del diseño de la app Android (`Krl22/z_store_android`) sobre el mismo
+backend de Supabase. Tienda, carrito, checkout por WhatsApp/Yape, perfil con direcciones y panel admin.
 
-Currently, two official plugins are available:
+React 19 + Vite + Tailwind 4 + supabase-js.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+En vivo: https://zeta-dorada-web.carthe5kboy.workers.dev
 
-## Expanding the ESLint configuration
+## Desarrollo
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```bash
+npm install
+npm run dev        # http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Usa las variables de `.env.production` (públicas). Para apuntar a otro proyecto de Supabase en local, crea
+`.env.local` a partir de `.env.example`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Publicar (Cloudflare)
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+**Despliegue automático:** cada push a `main` en GitHub (`Krl22/z_store`) se publica solo con Cloudflare
+Workers Builds (`npm run build` + `npx wrangler deploy`) en el Worker `zeta-dorada-web`.
+
+Para publicar a mano desde esta PC:
+
+```bash
+npm run deploy     # requiere `npx wrangler login` una vez por máquina
 ```
+
+Las variables `VITE_*` quedan dentro del JavaScript publicado: nunca pongas claves secretas ahí.
