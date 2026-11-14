@@ -1,35 +1,13 @@
 {
-  "name": "Zeta Store",
-  "short_name": "ZetaStore",
+  "name": "Zeta Dorada",
+  "short_name": "Zeta Dorada",
   "icons": [
-    {
-      "src": "/pwa-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/pwa-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/pwa-maskable-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/pwa-maskable-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
   ],
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#FFFFFF",
-  "description": "Store for zeta dorada"
+  "background_color": "#F3F0E6",
+  "theme_color": "#E5F4D8",
+  "description": "Kits de autocultivo de hongos comestibles y polvo de melena de león. Pide por WhatsApp."
 }

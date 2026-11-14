@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zeta-dorada-web",
+  "compatibility_date": "2026-09-01",
+  // Solo archivos estáticos: la app es una SPA que habla directo con Supabase.
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

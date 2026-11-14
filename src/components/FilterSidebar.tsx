@@ -1,86 +1,117 @@
-import { Button } from "@/components/ui/button";
-import { useFilter } from "../contexts/filter-context";
-import { PriceFilter } from "./price-filter";
-import { Filter, X } from "lucide-react";
+import type { ReactNode } from "react";
+import { SORT_OPTIONS, type SortKey } from "./StoreHeader";
 
-interface FilterSidebarProps {
-  className?: string;
-}
+// Filtros de la columna izquierda en escritorio (en el celular siguen como chips del encabezado).
 
-export function FilterSidebar({ className = "" }: FilterSidebarProps) {
-  const { activeFilter, setActiveFilter, resetFilters, priceRange } = useFilter();
+export type ProductFilters = {
+  category: string;
+  sortKey: SortKey;
+  minPrice: string;
+  maxPrice: string;
+  onlyStock: boolean;
+  onlyOffers: boolean;
+};
 
-  const filters = [
-    { id: "all", name: "Todos" },
-    { id: "promociones", name: "Promociones" },
-    { id: "cubensis", name: "Cubensis" },
-    { id: "medicinal", name: "Medicinal" },
-    { id: "comestible", name: "Comestible" },
-    { id: "Hongo", name: "Hongos" },
-    { id: "Sustrato", name: "Sustratos" },
-    { id: "Cultivo", name: "Cultivos" },
-    { id: "Grano", name: "Granos" },
-    { id: "Kits", name: "Kits" },
-  ];
+export const DEFAULT_FILTERS: ProductFilters = { category: "Todos", sortKey: "relevance", minPrice: "", maxPrice: "", onlyStock: false, onlyOffers: false };
 
-  const hasActiveFilters = activeFilter !== "" && activeFilter !== "all" || 
-    priceRange.min !== null || priceRange.max !== null;
+type Props = {
+  filters: ProductFilters;
+  onChange: (filters: ProductFilters) => void;
+  categories: { name: string; count: number }[];
+  resultCount: number;
+};
+
+export function FilterSidebar({ filters, onChange, categories, resultCount }: Props) {
+  const set = <K extends keyof ProductFilters>(key: K, value: ProductFilters[K]) => onChange({ ...filters, [key]: value });
+  const dirty = JSON.stringify(filters) !== JSON.stringify(DEFAULT_FILTERS);
 
   return (
-    <div className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 ${className}`}>
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-emerald-700 dark:text-amber-400" />
-            <h2 className="text-lg font-semibold text-emerald-800 dark:text-amber-300">
-              Filtros
-            </h2>
-          </div>
-          {hasActiveFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={resetFilters}
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            >
-              <X className="h-4 w-4" />
-              Limpiar
-            </Button>
-          )}
-        </div>
-
-        {/* Category Filters */}
-        <div className="space-y-3 mb-6">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-            Categorías
-          </h3>
-          <div className="space-y-2">
-            {filters.map((filter) => (
-              <Button
-                key={filter.id}
-                onClick={() => setActiveFilter(filter.id)}
-                variant={activeFilter === filter.id ? "default" : "ghost"}
-                className={`w-full justify-start text-left h-auto py-2 px-3 ${
-                  activeFilter === filter.id
-                    ? "bg-amber-400 text-emerald-900 hover:bg-amber-500 dark:bg-amber-600 dark:text-white dark:hover:bg-amber-700"
-                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                }`}
-              >
-                {filter.name}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Price Filter */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-            Precio
-          </h3>
-          <PriceFilter />
-        </div>
+    <aside className="flex flex-col gap-5 rounded-[24px] border border-bosque-border bg-white p-5" aria-label="Filtros">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-[20px] font-black text-bosque-ink">Filtros</h2>
+        <span className="text-[12px] font-bold text-bosque-muted">{resultCount === 1 ? "1 producto" : `${resultCount} productos`}</span>
       </div>
-    </div>
+
+      <Group title="Categorías">
+        {categories.map((c) => {
+          const active = filters.category === c.name;
+          return (
+            <button
+              key={c.name}
+              type="button"
+              onClick={() => set("category", c.name)}
+              className={`flex items-center justify-between rounded-[14px] px-3 py-2.5 text-left text-[15px] ${active ? "bg-store-mint font-black text-store-link" : "font-bold text-bosque-ink hover:bg-bosque-soft"}`}
+            >
+              {c.name}
+              <span className={`text-[12px] ${active ? "text-store-link" : "text-bosque-muted"}`}>{c.count}</span>
+            </button>
+          );
+        })}
+      </Group>
+
+      <Group title="Ordenar por">
+        {SORT_OPTIONS.map((option) => {
+          const selected = filters.sortKey === option.key;
+          return (
+            <button key={option.key} type="button" onClick={() => set("sortKey", option.key)} className="flex items-center gap-2.5 rounded-[14px] px-3 py-2 text-left hover:bg-bosque-soft">
+              <span className={`grid size-[18px] place-items-center rounded-full border ${selected ? "border-store-link bg-store-link" : "border-bosque-border bg-white"}`}>
+                {selected ? <span className="size-1.5 rounded-full bg-store-yellow" /> : null}
+              </span>
+              <span className={`text-[14px] ${selected ? "font-black text-bosque-deep" : "font-bold text-bosque-ink"}`}>{option.label}</span>
+            </button>
+          );
+        })}
+      </Group>
+
+      <Group title="Precio (S/)">
+        <div className="flex items-center gap-2 px-1">
+          <PriceInput label="Mínimo" value={filters.minPrice} onChange={(v) => set("minPrice", v)} />
+          <span className="text-bosque-muted">–</span>
+          <PriceInput label="Máximo" value={filters.maxPrice} onChange={(v) => set("maxPrice", v)} />
+        </div>
+      </Group>
+
+      <Group title="Más filtros">
+        <Check label="Solo con stock" checked={filters.onlyStock} onChange={(v) => set("onlyStock", v)} />
+        <Check label="Solo en oferta" checked={filters.onlyOffers} onChange={(v) => set("onlyOffers", v)} />
+      </Group>
+
+      {dirty ? (
+        <button type="button" onClick={() => onChange(DEFAULT_FILTERS)} className="h-11 rounded-full border border-store-line bg-white text-[14px] font-black text-bosque-ink">
+          Limpiar filtros
+        </button>
+      ) : null}
+    </aside>
+  );
+}
+
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-1">
+      <h3 className="mb-1 text-[12px] font-black uppercase tracking-wide text-bosque-muted">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function PriceInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <input
+      value={value}
+      onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 5))}
+      inputMode="numeric"
+      placeholder={label}
+      aria-label={`Precio ${label.toLowerCase()}`}
+      className="h-10 w-full min-w-0 rounded-[12px] border border-bosque-border bg-bosque-soft px-3 text-[14px] font-bold text-bosque-ink outline-none focus:border-store-link"
+    />
+  );
+}
+
+function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2.5 rounded-[14px] px-3 py-2 hover:bg-bosque-soft">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="size-[18px] accent-[#2F6F46]" />
+      <span className="text-[14px] font-bold text-bosque-ink">{label}</span>
+    </label>
   );
 }
